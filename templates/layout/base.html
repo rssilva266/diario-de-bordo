@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>MSM Fleet Manager</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="d-flex">
+
+    <div class="sidebar">
+        <h4 class="text-center mb-4">MSM Fleet</h4>
+
+        <a href="/">🏠 Dashboard</a>
+        <a href="/veiculos">🚗 Veículos</a>
+        <a href="/motoristas">👤 Motoristas</a>
+        <a href="/obras">🏗 Obras</a>
+        <a href="/abastecimentos">⛽ Abastecimentos</a>
+        <a href="/diario">📄 Diário de Bordo</a>
+        <a href="/relatorios">📊 Relatórios</a>
+        <a href="/configuracoes">⚙ Configurações</a>
+    </div>
+
+    <div class="content">
+
+        <div class="topbar">
+            <strong>MSM Fleet Manager</strong>
+            <span>Robson Souza da Silva</span>
+        </div>
+
+        <main class="p-4">
+            {% block conteudo %}
+            {% endblock %}
+        </main>
+
+    </div>
+
+</div>
+
+</body>
+</html>
