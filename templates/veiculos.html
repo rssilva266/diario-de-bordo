@@ -1,0 +1,91 @@
+{% extends 'layout/base.html' %}
+
+{% block titulo %}
+<div class="d-flex justify-content-between align-items-center">
+    <h1>Veículos</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoVeiculo">
+        + Novo Veículo
+    </button>
+</div>
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="card">
+    <div class="card-body">
+
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Placa</th>
+                    <th>Modelo</th>
+                    <th>Ano</th>
+                    <th>Combustível</th>
+                    <th>KM Atual</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for v in veiculos %}
+                <tr>
+                    <td>{{ v[0] }}</td>
+                    <td>{{ v[1] }}</td>
+                    <td>{{ v[2] }}</td>
+                    <td>{{ v[3] }}</td>
+                    <td>{{ v[4] }}</td>
+                    <td>{{ v[5] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<div class="modal fade" id="modalNovoVeiculo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <form method="POST" action="/veiculos/novo">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Novo Veículo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <label>Placa</label>
+                    <input type="text" name="placa" class="form-control mb-3" required>
+
+                    <label>Modelo</label>
+                    <input type="text" name="modelo" class="form-control mb-3" required>
+
+                    <label>Ano</label>
+                    <input type="number" name="ano" class="form-control mb-3">
+
+                    <label>Combustível</label>
+                    <select name="combustivel" class="form-control mb-3">
+                        <option>Gasolina</option>
+                        <option>Diesel</option>
+                        <option>Flex</option>
+                        <option>Etanol</option>
+                    </select>
+
+                    <label>KM Atual</label>
+                    <input type="number" name="km_atual" class="form-control mb-3" value="0">
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Salvar</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,45 +1,120 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <title>MSM Fleet Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- AdminLTE / Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <!-- CSS do projeto -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 
-<body>
+<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
 
-<div class="d-flex">
+<div class="app-wrapper">
 
-    <div class="sidebar">
-        <h4 class="text-center mb-4">MSM Fleet</h4>
+    <nav class="app-header navbar navbar-expand bg-body">
+        <div class="container-fluid">
+            <span class="navbar-brand">MSM Fleet Manager</span>
+            <span class="ms-auto">Robson Souza da Silva</span>
+        </div>
+    </nav>
 
-        <a href="/">🏠 Dashboard</a>
-        <a href="/veiculos">🚗 Veículos</a>
-        <a href="/motoristas">👤 Motoristas</a>
-        <a href="/obras">🏗 Obras</a>
-        <a href="/abastecimentos">⛽ Abastecimentos</a>
-        <a href="/diario">📄 Diário de Bordo</a>
-        <a href="/relatorios">📊 Relatórios</a>
-        <a href="/configuracoes">⚙ Configurações</a>
-    </div>
-
-    <div class="content">
-
-        <div class="topbar">
-            <strong>MSM Fleet Manager</strong>
-            <span>Robson Souza da Silva</span>
+    <aside class="app-sidebar bg-primary shadow" data-bs-theme="dark">
+        <div class="sidebar-brand">
+            <a href="/" class="brand-link">
+                <span class="brand-text fw-bold">MSM Fleet</span>
+            </a>
         </div>
 
-        <main class="p-4">
-            {% block conteudo %}
-            {% endblock %}
-        </main>
+        <div class="sidebar-wrapper">
+            <nav class="mt-2">
+                <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link">
+                            <i class="nav-icon bi bi-speedometer"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
 
-    </div>
+                    <li class="nav-item">
+                        <a href="/veiculos" class="nav-link">
+                            <i class="nav-icon bi bi-truck"></i>
+                            <p>Veículos</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/motoristas" class="nav-link">
+                            <i class="nav-icon bi bi-person-badge"></i>
+                            <p>Motoristas</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/obras" class="nav-link">
+                            <i class="nav-icon bi bi-building"></i>
+                            <p>Obras</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/abastecimentos" class="nav-link">
+                            <i class="nav-icon bi bi-fuel-pump"></i>
+                            <p>Abastecimentos</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/diario" class="nav-link">
+                            <i class="nav-icon bi bi-file-earmark-pdf"></i>
+                            <p>Diário de Bordo</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/relatorios" class="nav-link">
+                            <i class="nav-icon bi bi-bar-chart"></i>
+                            <p>Relatórios</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="/configuracoes" class="nav-link">
+                            <i class="nav-icon bi bi-gear"></i>
+                            <p>Configurações</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <main class="app-main">
+        <div class="app-content-header">
+            <div class="container-fluid">
+                {% block titulo %}
+                {% endblock %}
+            </div>
+        </div>
+
+        <div class="app-content">
+            <div class="container-fluid">
+                {% block conteudo %}
+                {% endblock %}
+            </div>
+        </div>
+    </main>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
