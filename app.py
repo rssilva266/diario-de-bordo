@@ -1,10 +1,11 @@
 from flask import Flask, render_template
 
 from controllers.veiculos import veiculos_bp
-
+from controllers.abastecimentos import abastecimentos_bp
 app = Flask(__name__)
 
 app.register_blueprint(veiculos_bp)
+app.register_blueprint(abastecimentos_bp)
 
 @app.route("/")
 def dashboard():
@@ -18,9 +19,7 @@ def motoristas():
 def obras():
     return render_template("obras.html")
 
-@app.route("/abastecimentos")
-def abastecimentos():
-    return render_template("abastecimentos.html")
+
 
 @app.route("/diario")
 def diario():

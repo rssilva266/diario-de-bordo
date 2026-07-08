@@ -1,0 +1,108 @@
+{% extends 'layout/base.html' %}
+
+{% block titulo %}
+<div>
+    <h1>Novo Abastecimento</h1>
+    <small class="text-muted">Registro inteligente com evidências</small>
+</div>
+{% endblock %}
+
+{% block conteudo %}
+
+<form method="POST" enctype="multipart/form-data">
+
+<div class="row">
+
+    <div class="col-md-8">
+
+        <div class="dashboard-panel mb-4">
+            <h5>1. Identificação</h5>
+
+            <div class="row mt-3">
+
+                <div class="col-md-6 mb-3">
+                    <label>Veículo</label>
+                    <select name="veiculo_id" class="form-control" required>
+                        {% for v in veiculos %}
+                        <option value="{{ v[0] }}">{{ v[1] }} - {{ v[2] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label>Motorista</label>
+                    <input type="text" name="motorista" class="form-control" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label>Obra</label>
+                    <input type="text" name="obra" class="form-control">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label>Data</label>
+                    <input type="date" name="data" class="form-control" required>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="dashboard-panel mb-4">
+            <h5>2. Dados do Abastecimento</h5>
+
+            <div class="row mt-3">
+
+                <div class="col-md-4 mb-3">
+                    <label>Valor Total</label>
+                    <input type="number" step="0.01" name="valor_total" id="valor_total" class="form-control" required>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label>Litros</label>
+                    <input type="number" step="0.01" name="litros" id="litros" class="form-control" required>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label>Odômetro</label>
+                    <input type="number" name="odometro" class="form-control" required>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label>Combustível</label>
+                    <select name="combustivel" class="form-control">
+                        <option>Gasolina</option>
+                        <option>Diesel</option>
+                        <option>Etanol</option>
+                        <option>Flex</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label>Valor por Litro</label>
+                    <input type="text" id="valor_litro_preview" class="form-control" readonly>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-md-4">
+
+        <div class="dashboard-panel mb-4">
+            <h5>Resumo</h5>
+
+            <p class="mt-3 mb-1 text-muted">Status</p>
+            <h4 class="text-success">Pronto para salvar</h4>
+
+            <p class="mt-3 mb-1 text-muted">Evidências</p>
+            <ul class="status-list">
+                <li>📷 Cupom fiscal</li>
+                <li>📷 Odômetro</li>
+                <li>📷 Placa</li>
+            </ul>
+        </div>
+
+    </div>
+
+</div>

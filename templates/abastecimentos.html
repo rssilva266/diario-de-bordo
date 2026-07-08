@@ -1,13 +1,51 @@
 {% extends 'layout/base.html' %}
 
 {% block titulo %}
-<h1>NOME DA TELA</h1>
+<div class="d-flex justify-content-between align-items-center">
+    <div>
+        <h1>Abastecimentos</h1>
+        <small class="text-muted">Controle de abastecimentos da frota</small>
+    </div>
+    <a href="/abastecimentos/novo" class="btn btn-primary">
+        + Novo Abastecimento
+    </a>
+</div>
 {% endblock %}
 
 {% block conteudo %}
+
 <div class="card">
     <div class="card-body">
-        Tela em desenvolvimento.
+
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th>Veículo</th>
+                    <th>Motorista</th>
+                    <th>Valor</th>
+                    <th>Litros</th>
+                    <th>Odômetro</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for a in abastecimentos %}
+                <tr>
+                    <td>ABS-{{ "%06d"|format(a[0]) }}</td>
+                    <td>{{ a[1] }}</td>
+                    <td>{{ a[2] }} - {{ a[3] }}</td>
+                    <td>{{ a[4] }}</td>
+                    <td>R$ {{ "%.2f"|format(a[5]) }}</td>
+                    <td>{{ "%.2f"|format(a[6]) }} L</td>
+                    <td>{{ a[7] }} km</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
     </div>
 </div>
+
 {% endblock %}
