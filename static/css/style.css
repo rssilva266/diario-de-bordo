@@ -4,4 +4,114 @@
 
 .small-box{
     border-radius: 14px;
+}.kpi-card{
+    background:linear-gradient(135deg,#111827,#1f2937);
+    color:white;
+    padding:22px;
+    border-radius:18px;
+    box-shadow:0 8px 25px rgba(0,0,0,.25);
+    min-height:135px;
+}
+
+.kpi-card h2{
+    font-size:32px;
+    margin:12px 0 5px 0;
+    font-weight:bold;
+}
+
+.kpi-card small{
+    color:#9ca3af;
+}
+
+.kpi-card.danger{
+    background:linear-gradient(135deg,#3b0a0a,#7f1d1d);
+}
+
+.kpi-card.warning{
+    background:linear-gradient(135deg,#3b2f0a,#854d0e);
+}
+
+.dashboard-panel{
+    background:#111827;
+    color:white;
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 8px 25px rgba(0,0,0,.22);
+    min-height:280px;
+}
+
+.fake-chart{
+    height:190px;
+    display:flex;
+    align-items:end;
+    gap:22px;
+    margin-top:25px;
+}
+
+.fake-chart div{
+    flex:1;
+    background:linear-gradient(180deg,#22c55e,#15803d);
+    border-radius:10px 10px 0 0;
+}
+
+.fake-chart .critical{
+    background:linear-gradient(180deg,#ef4444,#991b1b);
+}
+
+.chart-labels{
+    display:flex;
+    justify-content:space-between;
+    color:#9ca3af;
+    font-size:13px;
+    margin-top:10px;
+}
+
+.fleet-score{
+    font-size:58px;
+    font-weight:bold;
+    color:#22c55e;
+    text-align:center;
+    margin-top:25px;
+}
+
+.status-list{
+    list-style:none;
+    padding-left:0;
+    line-height:2;
+}
+
+.alert-item{
+    padding:14px;
+    border-radius:12px;
+    margin-bottom:12px;
+    display:flex;
+    flex-direction:column;
+}
+
+.alert-item span{
+    color:#d1d5db;
+    font-size:14px;
+}
+
+.alert-item.danger{
+    background:#7f1d1d;
+}
+
+.alert-item.warning{
+    background:#854d0e;
+}
+
+.alert-item.info{
+    background:#1e3a8a;
+}
+
+.ranking div{
+    display:flex;
+    justify-content:space-between;
+    padding:14px;
+    border-bottom:1px solid #374151;
+}
+
+.ranking .bad{
+    color:#f87171;
 }

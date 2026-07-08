@@ -1,78 +1,131 @@
 {% extends 'layout/base.html' %}
 
+{% block titulo %}
+<div class="d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="mb-0">Dashboard</h1>
+        <small class="text-muted">Visão geral da frota MSM</small>
+    </div>
+    <span class="badge bg-success p-2">Sistema Online</span>
+</div>
+{% endblock %}
+
 {% block conteudo %}
-
-<h2 class="mb-4">
-
-Dashboard
-
-</h2>
 
 <div class="row">
 
-<div class="col-md-3">
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <span>🚗 Veículos Ativos</span>
+            <h2>12</h2>
+            <small>+2 este mês</small>
+        </div>
+    </div>
 
-<div class="card">
+    <div class="col-md-3">
+        <div class="kpi-card">
+            <span>⛽ Litros Consumidos</span>
+            <h2>2.840 L</h2>
+            <small>Julho/2026</small>
+        </div>
+    </div>
 
-<div class="card-body">
+    <div class="col-md-3">
+        <div class="kpi-card danger">
+            <span>💰 Gasto Mensal</span>
+            <h2>R$ 18.532</h2>
+            <small>+8% vs mês anterior</small>
+        </div>
+    </div>
 
-<h5>🚗 Veículos</h5>
-
-<h2>0</h2>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-md-3">
-
-<div class="card">
-
-<div class="card-body">
-
-<h5>👤 Motoristas</h5>
-
-<h2>0</h2>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-md-3">
-
-<div class="card">
-
-<div class="card-body">
-
-<h5>⛽ Abastecimentos</h5>
-
-<h2>0</h2>
+    <div class="col-md-3">
+        <div class="kpi-card warning">
+            <span>📄 Diários Pendentes</span>
+            <h2>3</h2>
+            <small>Aguardando fechamento</small>
+        </div>
+    </div>
 
 </div>
 
-</div>
+<div class="row mt-4">
+
+    <div class="col-md-8">
+        <div class="dashboard-panel">
+            <h5>📈 Consumo por Motorista</h5>
+            <div class="fake-chart">
+                <div style="height:85%;"></div>
+                <div style="height:72%;"></div>
+                <div style="height:48%;"></div>
+                <div style="height:22%;" class="critical"></div>
+                <div style="height:65%;"></div>
+            </div>
+            <div class="chart-labels">
+                <span>Robson</span>
+                <span>João</span>
+                <span>Pedro</span>
+                <span>Carlos</span>
+                <span>Marcos</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="dashboard-panel">
+            <h5>❤️ Saúde da Frota</h5>
+            <div class="fleet-score">91%</div>
+            <div class="progress mt-3">
+                <div class="progress-bar bg-success" style="width:91%"></div>
+            </div>
+
+            <ul class="status-list mt-4">
+                <li>🟢 Consumo dentro do padrão</li>
+                <li>🟡 2 manutenções próximas</li>
+                <li>🔴 1 motorista com consumo crítico</li>
+                <li>🔵 3 diários aguardando fechamento</li>
+            </ul>
+        </div>
+    </div>
 
 </div>
 
-<div class="col-md-3">
+<div class="row mt-4">
 
-<div class="card">
+    <div class="col-md-6">
+        <div class="dashboard-panel">
+            <h5>🚨 Alertas Críticos</h5>
 
-<div class="card-body">
+            <div class="alert-item danger">
+                <strong>Consumo crítico</strong>
+                <span>Carlos está com média de 3 km/L no Uno. Esperado: 14 km/L.</span>
+            </div>
 
-<h5>📄 Diários</h5>
+            <div class="alert-item warning">
+                <strong>Manutenção próxima</strong>
+                <span>Hilux precisa trocar óleo em 420 km.</span>
+            </div>
 
-<h2>0</h2>
+            <div class="alert-item info">
+                <strong>Diário pendente</strong>
+                <span>Junho/2026 ainda não foi fechado.</span>
+            </div>
 
-</div>
+        </div>
+    </div>
 
-</div>
+    <div class="col-md-6">
+        <div class="dashboard-panel">
+            <h5>🏆 Ranking de Eficiência</h5>
 
-</div>
+            <div class="ranking">
+                <div><span>🥇 João</span><strong>15,2 km/L</strong></div>
+                <div><span>🥈 Robson</span><strong>14,9 km/L</strong></div>
+                <div><span>🥉 Pedro</span><strong>13,8 km/L</strong></div>
+                <div class="bad"><span>⚠ Carlos</span><strong>3,0 km/L</strong></div>
+            </div>
+
+        </div>
+    </div>
 
 </div>
 

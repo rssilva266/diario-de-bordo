@@ -36,61 +36,99 @@
         <div class="sidebar-wrapper">
             <nav class="mt-2">
                 <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu">
-                    <li class="nav-item">
-                        <a href="/" class="nav-link">
-                            <i class="nav-icon bi bi-speedometer"></i>
-                            <p>Dashboard</p>
-                        </a>
-                    </li>
+                  <li class="nav-item">
+    <a href="/" class="nav-link">
+        <i class="nav-icon bi bi-speedometer2"></i>
+        <p>Dashboard</p>
+    </a>
+</li>
 
-                    <li class="nav-item">
-                        <a href="/veiculos" class="nav-link">
-                            <i class="nav-icon bi bi-truck"></i>
-                            <p>Veículos</p>
-                        </a>
-                    </li>
+<li class="nav-header">MÓDULOS</li>
 
-                    <li class="nav-item">
-                        <a href="/motoristas" class="nav-link">
-                            <i class="nav-icon bi bi-person-badge"></i>
-                            <p>Motoristas</p>
-                        </a>
-                    </li>
+<li class="nav-item">
+    <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-folder2-open"></i>
+        <p>Cadastros <i class="nav-arrow bi bi-chevron-right"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item"><a href="/veiculos" class="nav-link"><i class="nav-icon bi bi-truck"></i><p>Veículos</p></a></li>
+        <li class="nav-item"><a href="/motoristas" class="nav-link"><i class="nav-icon bi bi-people"></i><p>Colaboradores</p></a></li>
+        <li class="nav-item"><a href="/obras" class="nav-link"><i class="nav-icon bi bi-building"></i><p>Obras</p></a></li>
+        <li class="nav-item"><a href="/postos" class="nav-link"><i class="nav-icon bi bi-fuel-pump"></i><p>Postos</p></a></li>
+        <li class="nav-item"><a href="/combustiveis" class="nav-link"><i class="nav-icon bi bi-droplet"></i><p>Combustíveis</p></a></li>
+        <li class="nav-item"><a href="/centros-custo" class="nav-link"><i class="nav-icon bi bi-diagram-3"></i><p>Centros de Custo</p></a></li>
+    </ul>
+</li>
 
-                    <li class="nav-item">
-                        <a href="/obras" class="nav-link">
-                            <i class="nav-icon bi bi-building"></i>
-                            <p>Obras</p>
-                        </a>
-                    </li>
+<li class="nav-item">
+    <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-gear-wide-connected"></i>
+        <p>Operações <i class="nav-arrow bi bi-chevron-right"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item"><a href="/abastecimentos" class="nav-link"><i class="nav-icon bi bi-fuel-pump-fill"></i><p>Abastecimentos</p></a></li>
+        <li class="nav-item"><a href="/manutencoes" class="nav-link"><i class="nav-icon bi bi-tools"></i><p>Manutenções</p></a></li>
+        <li class="nav-item"><a href="/troca-oleo" class="nav-link"><i class="nav-icon bi bi-droplet-half"></i><p>Troca de Óleo</p></a></li>
+        <li class="nav-item"><a href="/ocorrencias" class="nav-link"><i class="nav-icon bi bi-exclamation-triangle"></i><p>Ocorrências</p></a></li>
+    </ul>
+</li>
 
-                    <li class="nav-item">
-                        <a href="/abastecimentos" class="nav-link">
-                            <i class="nav-icon bi bi-fuel-pump"></i>
-                            <p>Abastecimentos</p>
-                        </a>
-                    </li>
+<li class="nav-item">
+    <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-graph-up-arrow"></i>
+        <p>Inteligência <i class="nav-arrow bi bi-chevron-right"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item"><a href="/saude-frota" class="nav-link"><i class="nav-icon bi bi-heart-pulse"></i><p>Saúde da Frota</p></a></li>
+        <li class="nav-item"><a href="/ranking" class="nav-link"><i class="nav-icon bi bi-trophy"></i><p>Ranking</p></a></li>
+        <li class="nav-item"><a href="/alertas" class="nav-link"><i class="nav-icon bi bi-bell"></i><p>Alertas</p></a></li>
+        <li class="nav-item"><a href="/indicadores" class="nav-link"><i class="nav-icon bi bi-bar-chart-line"></i><p>Indicadores</p></a></li>
+    </ul>
+</li>
 
-                    <li class="nav-item">
-                        <a href="/diario" class="nav-link">
-                            <i class="nav-icon bi bi-file-earmark-pdf"></i>
-                            <p>Diário de Bordo</p>
-                        </a>
-                    </li>
+<li class="nav-item">
+    <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-file-earmark-text"></i>
+        <p>Documentos <i class="nav-arrow bi bi-chevron-right"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item"><a href="/diario" class="nav-link"><i class="nav-icon bi bi-journal-text"></i><p>Diário de Bordo</p></a></li>
+        <li class="nav-item"><a href="/fechamento-mensal" class="nav-link"><i class="nav-icon bi bi-calendar-check"></i><p>Fechamento Mensal</p></a></li>
+        <li class="nav-item"><a href="/relatorios" class="nav-link"><i class="nav-icon bi bi-filetype-pdf"></i><p>Relatórios</p></a></li>
+    </ul>
+</li>
 
-                    <li class="nav-item">
-                        <a href="/relatorios" class="nav-link">
-                            <i class="nav-icon bi bi-bar-chart"></i>
-                            <p>Relatórios</p>
-                        </a>
-                    </li>
+<li class="nav-header">SISTEMA</li>
 
-                    <li class="nav-item">
-                        <a href="/configuracoes" class="nav-link">
-                            <i class="nav-icon bi bi-gear"></i>
-                            <p>Configurações</p>
-                        </a>
-                    </li>
+<li class="nav-item">
+    <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-shield-lock"></i>
+        <p>Administração <i class="nav-arrow bi bi-chevron-right"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item"><a href="/usuarios" class="nav-link"><i class="nav-icon bi bi-person-lock"></i><p>Usuários</p></a></li>
+        <li class="nav-item"><a href="/permissoes" class="nav-link"><i class="nav-icon bi bi-key"></i><p>Permissões</p></a></li>
+        <li class="nav-item"><a href="/backup" class="nav-link"><i class="nav-icon bi bi-database-down"></i><p>Backup</p></a></li>
+        <li class="nav-item"><a href="/configuracoes" class="nav-link"><i class="nav-icon bi bi-sliders"></i><p>Configurações</p></a></li>
+    </ul>
+</li>
+    </ul>
+</li>
+
+<li class="nav-header">SISTEMA</li>
+
+<li class="nav-item">
+    <a href="#" class="nav-link">
+        <i class="nav-icon bi bi-shield-lock"></i>
+        <p>Administração <i class="nav-arrow bi bi-chevron-right"></i></p>
+    </a>
+    <ul class="nav nav-treeview">
+        <li class="nav-item"><a href="/usuarios" class="nav-link"><i class="nav-icon bi bi-person-lock"></i><p>Usuários</p></a></li>
+        <li class="nav-item"><a href="/permissoes" class="nav-link"><i class="nav-icon bi bi-key"></i><p>Permissões</p></a></li>
+        <li class="nav-item"><a href="/backup" class="nav-link"><i class="nav-icon bi bi-database-down"></i><p>Backup</p></a></li>
+        <li class="nav-item"><a href="/configuracoes" class="nav-link"><i class="nav-icon bi bi-sliders"></i><p>Configurações</p></a></li>
+    </ul>
+</li>
                 </ul>
             </nav>
         </div>
