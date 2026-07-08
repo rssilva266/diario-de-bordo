@@ -106,3 +106,67 @@
     </div>
 
 </div>
+        <div class="dashboard-panel">
+            <h5>3. Evidências</h5>
+
+            <div class="upload-grid mt-3">
+
+                <label class="upload-card">
+                    <input type="file" name="cupom_foto" accept="image/*">
+                    <span>📷</span>
+                    <strong>Cupom Fiscal</strong>
+                    <small>Clique para anexar</small>
+                </label>
+
+                <label class="upload-card">
+                    <input type="file" name="odometro_foto" accept="image/*">
+                    <span>📷</span>
+                    <strong>Odômetro</strong>
+                    <small>Clique para anexar</small>
+                </label>
+
+                <label class="upload-card">
+                    <input type="file" name="placa_foto" accept="image/*">
+                    <span>📷</span>
+                    <strong>Placa</strong>
+                    <small>Clique para anexar</small>
+                </label>
+
+            </div>
+
+            <div class="mt-4">
+                <label>Observação</label>
+                <textarea name="observacao" class="form-control"></textarea>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success btn-lg">
+                    💾 Salvar Abastecimento
+                </button>
+
+                <a href="/abastecimentos" class="btn btn-secondary btn-lg">
+                    Cancelar
+                </a>
+            </div>
+        </div>
+
+</form>
+
+<script>
+function calcularValorLitro(){
+    const valor = parseFloat(document.getElementById("valor_total").value || 0);
+    const litros = parseFloat(document.getElementById("litros").value || 0);
+    const campo = document.getElementById("valor_litro_preview");
+
+    if(valor > 0 && litros > 0){
+        campo.value = "R$ " + (valor / litros).toFixed(2).replace(".", ",");
+    }else{
+        campo.value = "";
+    }
+}
+
+document.getElementById("valor_total").addEventListener("input", calcularValorLitro);
+document.getElementById("litros").addEventListener("input", calcularValorLitro);
+</script>
+
+{% endblock %}

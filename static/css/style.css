@@ -115,3 +115,40 @@
 .ranking .bad{
     color:#f87171;
 }
+.upload-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:15px;
+}
+
+.upload-card{
+    border:2px dashed #374151;
+    border-radius:16px;
+    min-height:150px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:.2s;
+    background:#0f172a;
+    color:white;
+    text-align:center;
+}
+
+.upload-card:hover{
+    border-color:#22c55e;
+    transform:translateY(-3px);
+}
+
+.upload-card input{
+    display:none;
+}
+
+.upload-card span{
+    font-size:34px;
+}
+
+.upload-card small{
+    color:#9ca3af;
+}
