@@ -11,7 +11,10 @@ def listar_veiculos():
     conn = conectar()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id, placa, modelo, ano, combustivel, km_atual FROM veiculos")
+    cursor.execute("""
+        SELECT id, placa, modelo, ano, combustivel, km_atual, media_esperada
+        FROM veiculos
+    """)
     veiculos = cursor.fetchall()
 
     conn.close()
@@ -26,14 +29,16 @@ def novo_veiculo():
     ano = request.form["ano"]
     combustivel = request.form["combustivel"]
     km_atual = request.form["km_atual"]
+    media_esperada = request.form["media_esperada"]
 
     conn = conectar()
     cursor = conn.cursor()
 
     cursor.execute("""
-        INSERT INTO veiculos (placa, modelo, ano, combustivel, km_atual)
-        VALUES (?, ?, ?, ?, ?)
-    """, (placa, modelo, ano, combustivel, km_atual))
+        INSERT INTO veiculos 
+        (placa, modelo, ano, combustivel, km_atual, media_esperada)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (placa, modelo, ano, combustivel, km_atual, media_esperada))
 
     conn.commit()
     conn.close()

@@ -23,6 +23,7 @@
                     <th>Ano</th>
                     <th>Combustível</th>
                     <th>KM Atual</th>
+                    <th>Média Esperada</th>
                 </tr>
             </thead>
 
@@ -35,6 +36,7 @@
                     <td>{{ v[3] }}</td>
                     <td>{{ v[4] }}</td>
                     <td>{{ v[5] }}</td>
+                    <td>{{ v[6] }} km/L</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -75,6 +77,9 @@
 
                     <label>KM Atual</label>
                     <input type="number" name="km_atual" class="form-control mb-3" value="0">
+
+                    <label>Média esperada km/L</label>
+                    <input type="number" step="0.01" name="media_esperada" class="form-control mb-3" value="0">
 
                 </div>
 
