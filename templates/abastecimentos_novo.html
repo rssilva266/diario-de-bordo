@@ -111,26 +111,59 @@
 
             <div class="upload-grid mt-3">
 
-                <label class="upload-card">
-                    <input type="file" name="cupom_foto" accept="image/*">
-                    <span>📷</span>
-                    <strong>Cupom Fiscal</strong>
-                    <small>Clique para anexar</small>
-                </label>
+                <<label class="upload-card">
+
+    <input
+        type="file"
+        name="cupom_foto"
+        accept="image/*"
+        onchange="previewImage(this,'previewCupom')">
+
+    <img id="previewCupom" class="preview-image">
+
+    <span>📷</span>
+
+    <strong>Cupom Fiscal</strong>
+
+    <small>Clique para anexar</small>
+
+</label>
 
                 <label class="upload-card">
-                    <input type="file" name="odometro_foto" accept="image/*">
-                    <span>📷</span>
-                    <strong>Odômetro</strong>
-                    <small>Clique para anexar</small>
-                </label>
 
-                <label class="upload-card">
-                    <input type="file" name="placa_foto" accept="image/*">
-                    <span>📷</span>
-                    <strong>Placa</strong>
-                    <small>Clique para anexar</small>
-                </label>
+    <input
+        type="file"
+        name="odometro_foto"
+        accept="image/*"
+        onchange="previewImage(this,'previewOdom')">
+
+    <img id="previewOdom" class="preview-image">
+
+    <span>📷</span>
+
+    <strong>Odômetro</strong>
+
+    <small>Clique para anexar</small>
+
+</label>
+
+                <<label class="upload-card">
+
+    <input
+        type="file"
+        name="placa_foto"
+        accept="image/*"
+        onchange="previewImage(this,'previewPlaca')">
+
+    <img id="previewPlaca" class="preview-image">
+
+    <span>📷</span>
+
+    <strong>Placa</strong>
+
+    <small>Clique para anexar</small>
+
+</label>
 
             </div>
 
@@ -168,5 +201,29 @@ function calcularValorLitro(){
 document.getElementById("valor_total").addEventListener("input", calcularValorLitro);
 document.getElementById("litros").addEventListener("input", calcularValorLitro);
 </script>
+<script>
 
+function previewImage(input,id){
+
+    const file=input.files[0];
+
+    if(!file) return;
+
+    const reader=new FileReader();
+
+    reader.onload=function(e){
+
+        const img=document.getElementById(id);
+
+        img.src=e.target.result;
+
+        img.style.display="block";
+
+    }
+
+    reader.readAsDataURL(file);
+
+}
+
+</script>
 {% endblock %}
