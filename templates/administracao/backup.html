@@ -1,0 +1,49 @@
+{% extends 'layout/base.html' %}
+
+{% block titulo %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+        <h1 class="mb-1">Backup</h1>
+        <p class="text-secondary mb-0">Proteja o banco de dados, configurações e anexos do sistema.</p>
+    </div>
+    <form method="post" action="{{ url_for('sistema.criar_backup_manual') }}">
+        <button class="btn btn-primary"><i class="bi bi-cloud-arrow-down me-2"></i>Criar backup agora</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block conteudo %}
+<div class="row g-4 mb-4">
+    <div class="col-md-4"><div class="system-card"><i class="bi bi-database-check system-card-icon text-success"></i><h4>Banco de dados</h4><p>Veículos, usuários, abastecimentos, diários e configurações.</p></div></div>
+    <div class="col-md-4"><div class="system-card"><i class="bi bi-images system-card-icon text-info"></i><h4>Anexos</h4><p>Fotos, comprovantes, logos e arquivos enviados ao sistema.</p></div></div>
+    <div class="col-md-4"><div class="system-card"><i class="bi bi-shield-check system-card-icon text-warning"></i><h4>Restauração segura</h4><p>O sistema cria outro backup antes de restaurar um arquivo antigo.</p></div></div>
+</div>
+
+<div class="card panel-card">
+    <div class="card-header border-0"><h3 class="card-title">Backups disponíveis</h3></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Arquivo</th><th>Data</th><th>Tamanho</th><th class="text-end">Ações</th></tr></thead>
+                <tbody>
+                {% for backup in backups %}
+                    <tr>
+                        <td><i class="bi bi-file-earmark-zip me-2 text-primary"></i>{{ backup.nome }}</td>
+                        <td>{{ backup.criado_em.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                        <td>{{ backup.tamanho }}</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('sistema.baixar_backup', nome=backup.nome) }}"><i class="bi bi-download"></i></a>
+                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#restaurar-{{ loop.index }}"><i class="bi bi-arrow-counterclockwise"></i></button>
+                            <form class="d-inline" method="post" action="{{ url_for('sistema.excluir_backup', nome=backup.nome) }}" onsubmit="return confirm('Excluir este backup?');"><button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+                        </td>
+                    </tr>
+                    <div class="modal fade" id="restaurar-{{ loop.index }}" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post" action="{{ url_for('sistema.restaurar_backup', nome=backup.nome) }}"><div class="modal-header"><h5 class="modal-title">Restaurar backup</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="alert alert-warning">A restauração substituirá os dados e anexos atuais. Um backup de segurança será criado automaticamente.</div><label class="form-label">Digite <strong>RESTAURAR</strong></label><input class="form-control" name="confirmacao" autocomplete="off" required></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-warning">Restaurar</button></div></form></div></div></div>
+                {% else %}
+                    <tr><td colspan="4" class="text-center py-5 text-secondary">Nenhum backup criado.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

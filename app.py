@@ -20,6 +20,8 @@ from controllers.manutencoes import manutencoes_bp
 from controllers.motoristas import motoristas_bp
 from controllers.obras import obras_bp
 from controllers.relatorios import relatorios_bp
+from controllers.sistema import sistema_bp
+from controllers.usuarios import usuarios_bp
 from controllers.veiculos import veiculos_bp
 from database.models import (
     Abastecimento,
@@ -167,6 +169,8 @@ def create_app():
     app.register_blueprint(manutencoes_bp)
     app.register_blueprint(relatorios_bp)
     app.register_blueprint(configuracoes_bp)
+    app.register_blueprint(usuarios_bp)
+    app.register_blueprint(sistema_bp)
 
     @login_manager.user_loader
     def carregar_usuario(usuario_id):

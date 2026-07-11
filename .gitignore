@@ -10,3 +10,7 @@ static/uploads/
 .env
 *.py[cod]
 database/*.db
+
+# Backups gerados pelo sistema
+backups/*.zip
+backups/restore_*/

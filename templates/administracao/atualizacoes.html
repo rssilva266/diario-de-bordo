@@ -1,0 +1,31 @@
+{% extends 'layout/base.html' %}
+
+{% block titulo %}
+<div>
+    <h1 class="mb-1">Atualizações</h1>
+    <p class="text-secondary mb-0">Verifique, proteja e atualize o MSM Suite com segurança.</p>
+</div>
+{% endblock %}
+
+{% block conteudo %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card panel-card h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                    <div><span class="badge text-bg-primary mb-3">Branch {{ git.branch }}</span><h2>MSM Suite</h2><p class="text-secondary">Commit instalado: <code>{{ git.commit }}</code></p></div>
+                    {% if git.atrasado is not none and git.atrasado > 0 %}<div class="update-status update-warning"><i class="bi bi-arrow-up-circle"></i><strong>{{ git.atrasado }}</strong><span>atualização(ões)</span></div>{% elif git.disponivel %}<div class="update-status update-ok"><i class="bi bi-check-circle"></i><strong>OK</strong><span>atualizado</span></div>{% else %}<div class="update-status update-error"><i class="bi bi-exclamation-triangle"></i><strong>OFF</strong><span>Git indisponível</span></div>{% endif %}
+                </div>
+                <hr>
+                <dl class="row mb-0"><dt class="col-sm-3">Repositório</dt><dd class="col-sm-9 text-break">{{ git.remoto }}</dd><dt class="col-sm-3">Arquivos locais</dt><dd class="col-sm-9">{% if git.limpo %}<span class="text-success">Sem alterações pendentes</span>{% else %}<span class="text-warning">Existem alterações locais</span>{% endif %}</dd></dl>
+                {% if git.mensagem %}<div class="alert alert-warning mt-3">{{ git.mensagem }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card panel-card h-100"><div class="card-body p-4"><h4>Atualização protegida</h4><p class="text-secondary">Antes de atualizar, o sistema cria um backup completo e executa as migrações do banco.</p><form method="post" action="{{ url_for('sistema.verificar_atualizacoes') }}" class="d-grid mb-3"><button class="btn btn-outline-primary"><i class="bi bi-arrow-repeat me-2"></i>Verificar atualizações</button></form><button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalAtualizar" {% if not git.disponivel or not git.limpo %}disabled{% endif %}><i class="bi bi-cloud-arrow-down me-2"></i>Aplicar atualização</button></div></div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalAtualizar" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post" action="{{ url_for('sistema.aplicar_atualizacao') }}"><div class="modal-header"><h5 class="modal-title">Confirmar atualização</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="alert alert-info">Será criado um backup automático. Após a atualização, reinicie o serviço do sistema.</div><label class="form-label">Digite <strong>ATUALIZAR</strong></label><input class="form-control" name="confirmacao" required autocomplete="off"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary">Atualizar sistema</button></div></form></div></div></div>
+{% endblock %}

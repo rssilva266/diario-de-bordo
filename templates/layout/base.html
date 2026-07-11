@@ -113,124 +113,65 @@
                     data-lte-toggle="treeview"
                     role="menu"
                 >
-
                     <li class="nav-item">
-
-                        <a
-                            href="/"
-                            class="nav-link {% if request.path == '/' %}active{% endif %}"
-                            title="Dashboard"
-                        >
-                            <i class="nav-icon bi bi-speedometer2"></i>
-                            <p>Dashboard</p>
+                        <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                            <i class="nav-icon bi bi-speedometer2"></i><p>Dashboard</p>
                         </a>
-
                     </li>
 
-                    <li class="nav-item">
+                    <li class="nav-header">MÓDULOS</li>
 
-                        <a
-                            href="/veiculos"
-                            class="nav-link {% if request.path.startswith('/veiculos') %}active{% endif %}"
-                            title="Veículos"
-                        >
-                            <i class="nav-icon bi bi-truck"></i>
-                            <p>Veículos</p>
+                    <li class="nav-item {% if request.path.startswith('/veiculos') or request.path.startswith('/motoristas') or request.path.startswith('/obras') or request.path.startswith('/cadastros/usuarios') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if request.path.startswith('/veiculos') or request.path.startswith('/motoristas') or request.path.startswith('/obras') or request.path.startswith('/cadastros/usuarios') %}active{% endif %}">
+                            <i class="nav-icon bi bi-folder2-open"></i>
+                            <p>Cadastros <i class="nav-arrow bi bi-chevron-right"></i></p>
                         </a>
-
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item"><a href="/veiculos" class="nav-link {% if request.path.startswith('/veiculos') %}active{% endif %}"><i class="nav-icon bi bi-truck"></i><p>Veículos</p></a></li>
+                            <li class="nav-item"><a href="/motoristas" class="nav-link {% if request.path.startswith('/motoristas') %}active{% endif %}"><i class="nav-icon bi bi-people"></i><p>Colaboradores</p></a></li>
+                            <li class="nav-item"><a href="/obras" class="nav-link {% if request.path.startswith('/obras') %}active{% endif %}"><i class="nav-icon bi bi-building"></i><p>Obras</p></a></li>
+                            {% if (current_user.perfil or '')|lower == 'administrador' %}
+                            <li class="nav-item"><a href="{{ url_for('usuarios.listar_usuarios') }}" class="nav-link {% if request.path.startswith('/cadastros/usuarios') %}active{% endif %}"><i class="nav-icon bi bi-person-gear"></i><p>Usuários</p></a></li>
+                            {% endif %}
+                        </ul>
                     </li>
 
-                    <li class="nav-item">
-
-                        <a
-                            href="/motoristas"
-                            class="nav-link {% if request.path.startswith('/motoristas') %}active{% endif %}"
-                            title="Motoristas"
-                        >
-                            <i class="nav-icon bi bi-person-badge"></i>
-                            <p>Motoristas</p>
+                    <li class="nav-item {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') %}active{% endif %}">
+                            <i class="nav-icon bi bi-gear-wide-connected"></i>
+                            <p>Operações <i class="nav-arrow bi bi-chevron-right"></i></p>
                         </a>
-
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item"><a href="/abastecimentos" class="nav-link {% if request.path.startswith('/abastecimentos') %}active{% endif %}"><i class="nav-icon bi bi-fuel-pump"></i><p>Abastecimentos</p></a></li>
+                            <li class="nav-item"><a href="/manutencoes" class="nav-link {% if request.path.startswith('/manutencoes') %}active{% endif %}"><i class="nav-icon bi bi-tools"></i><p>Manutenções</p></a></li>
+                            <li class="nav-item"><a href="/diario" class="nav-link {% if request.path.startswith('/diario') %}active{% endif %}"><i class="nav-icon bi bi-journal-text"></i><p>Diário de Bordo</p></a></li>
+                        </ul>
                     </li>
 
-                    <li class="nav-item">
-
-                        <a
-                            href="/obras"
-                            class="nav-link {% if request.path.startswith('/obras') %}active{% endif %}"
-                            title="Obras"
-                        >
-                            <i class="nav-icon bi bi-building"></i>
-                            <p>Obras</p>
-                        </a>
-
-                    </li>
-
-                    <li class="nav-item">
-
-                        <a
-                            href="/abastecimentos"
-                            class="nav-link {% if request.path.startswith('/abastecimentos') %}active{% endif %}"
-                            title="Abastecimentos"
-                        >
-                            <i class="nav-icon bi bi-fuel-pump"></i>
-                            <p>Abastecimentos</p>
-                        </a>
-
-                    </li>
-
-                    <li class="nav-item">
-
-                        <a
-                            href="/manutencoes"
-                            class="nav-link {% if request.path.startswith('/manutencoes') %}active{% endif %}"
-                            title="Manutenções"
-                        >
-                            <i class="nav-icon bi bi-tools"></i>
-                            <p>Manutenções</p>
-                        </a>
-
-                    </li>
-
-                    <li class="nav-item">
-
-                        <a
-                            href="/diario"
-                            class="nav-link {% if request.path.startswith('/diario') %}active{% endif %}"
-                            title="Diário de Bordo"
-                        >
-                            <i class="nav-icon bi bi-journal-text"></i>
-                            <p>Diário de Bordo</p>
-                        </a>
-
-                    </li>
-
-                    <li class="nav-item">
-
-                        <a
-                            href="/relatorios"
-                            class="nav-link {% if request.path.startswith('/relatorios') %}active{% endif %}"
-                            title="Relatórios"
-                        >
+                    <li class="nav-item {% if request.path.startswith('/relatorios') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if request.path.startswith('/relatorios') %}active{% endif %}">
                             <i class="nav-icon bi bi-bar-chart-line"></i>
-                            <p>Relatórios</p>
+                            <p>Relatórios <i class="nav-arrow bi bi-chevron-right"></i></p>
                         </a>
-
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item"><a href="/relatorios" class="nav-link {% if request.path.startswith('/relatorios') %}active{% endif %}"><i class="nav-icon bi bi-file-earmark-bar-graph"></i><p>Relatórios Gerenciais</p></a></li>
+                        </ul>
                     </li>
 
-                    <li class="nav-item">
-
-                        <a
-                            href="/configuracoes"
-                            class="nav-link {% if request.path.startswith('/configuracoes') %}active{% endif %}"
-                            title="Configurações"
-                        >
-                            <i class="nav-icon bi bi-gear"></i>
-                            <p>Configurações</p>
+                    {% if (current_user.perfil or '')|lower == 'administrador' %}
+                    <li class="nav-header">SISTEMA</li>
+                    <li class="nav-item {% if request.path.startswith('/configuracoes') or request.path.startswith('/administracao') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if request.path.startswith('/configuracoes') or request.path.startswith('/administracao') %}active{% endif %}">
+                            <i class="nav-icon bi bi-shield-lock"></i>
+                            <p>Administração <i class="nav-arrow bi bi-chevron-right"></i></p>
                         </a>
-
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item"><a href="/configuracoes" class="nav-link {% if request.path.startswith('/configuracoes') %}active{% endif %}"><i class="nav-icon bi bi-sliders"></i><p>Configurações</p></a></li>
+                            <li class="nav-item"><a href="{{ url_for('sistema.backups') }}" class="nav-link {% if request.path.startswith('/administracao/backup') %}active{% endif %}"><i class="nav-icon bi bi-database-down"></i><p>Backup</p></a></li>
+                            <li class="nav-item"><a href="{{ url_for('sistema.atualizacoes') }}" class="nav-link {% if request.path.startswith('/administracao/atualizacoes') %}active{% endif %}"><i class="nav-icon bi bi-cloud-arrow-down"></i><p>Atualizações</p></a></li>
+                        </ul>
                     </li>
-
+                    {% endif %}
                 </ul>
 
             </nav>
