@@ -98,7 +98,13 @@ def converter_decimal(valor):
     )
 
     if not texto:
-        return Decimal("0")
+        return None
+
+        # Formatos aceitos:
+    # 1500
+    # 1500.50
+    # 1500,50
+    # 1.500,50
 
     if "," in texto:
         texto = (
@@ -201,9 +207,7 @@ def salvar_comprovante(
         .lower()
     )
 
-    nome_final = (
-        f"{uuid4().hex}.{extensao}"
-    )
+    nome_final = f"{uuid4().hex}.{extensao}"
 
     pasta_relativa = Path(
         "uploads",
@@ -368,22 +372,25 @@ def obter_dados_formulario(empresa_id):
 
 def validar_dados(dados):
     if dados["veiculo"] is None:
-        return "Selecione um veículo válido."
+        return "Selecione o veículo da manutenção."
 
     if dados["tipo"] not in TIPOS_PERMITIDOS:
-        return "Selecione um tipo de manutenção válido."
+        return "Selecione o tipo da manutenção."
 
     if not dados["descricao"]:
         return "Informe a descrição do serviço."
 
     if dados["data_entrada"] is None:
-        return "Informe uma data de entrada válida."
+        return "Informe a data de entrada."
 
     if dados["status"] not in STATUS_PERMITIDOS:
-        return "Selecione um status válido."
+        return "Selecione o status da manutenção."
 
-    if dados["km"] is None or dados["km"] < 0:
-        return "Informe uma quilometragem válida."
+    if dados["km"] is None:
+        return "Informe a quilometragem do veículo."
+
+    if dados["km"] < 0:
+        return "A quilometragem não pode ser negativa."
 
     if (
         dados["obra_id_informada"]
@@ -392,10 +399,10 @@ def validar_dados(dados):
         return "A obra selecionada não foi encontrada."
 
     if dados["valor_pecas"] is None:
-        return "Informe um valor válido para as peças."
+        return "Informe o valor das peças."
 
     if dados["valor_mao_obra"] is None:
-        return "Informe um valor válido para a mão de obra."
+        return "Informe o valor da mão de obra."
 
     if dados["valor_pecas"] < 0:
         return "O valor das peças não pode ser negativo."

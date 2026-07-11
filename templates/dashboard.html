@@ -1,111 +1,1145 @@
 {% extends "layout/base.html" %}
 
-{% block titulo %}
-<div>
-    <h1 class="page-title mb-1">Dashboard</h1>
 
-    {% if empresa %}
+{% macro dinheiro(valor) -%}
+R$ {{
+    "{:,.2f}".format(valor or 0)
+    .replace(",", "X")
+    .replace(".", ",")
+    .replace("X", ".")
+}}
+{%- endmacro %}
+
+
+{% block titulo %}
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+
+        <h1 class="page-title mb-1">
+            Dashboard Executivo
+        </h1>
+
         <p class="text-muted mb-0">
-            {{ empresa.nome_fantasia or empresa.razao_social }}
-            · Plano {{ empresa.plano.nome }}
+            Visão geral da operação e dos custos da frota
         </p>
-    {% endif %}
+
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+
+        <span class="badge text-bg-light border px-3 py-2">
+            <i class="bi bi-calendar3 me-1"></i>
+
+            {{ inicio_mes.strftime("%d/%m/%Y") }}
+            até
+            {{ hoje.strftime("%d/%m/%Y") }}
+        </span>
+
+        <a
+            href="{{ url_for('relatorios.listar_relatorios') }}"
+            class="btn btn-outline-primary"
+        >
+            <i class="bi bi-bar-chart-line me-1"></i>
+            Ver relatórios
+        </a>
+
+    </div>
+
 </div>
+
 {% endblock %}
 
+
 {% block conteudo %}
-<div class="row g-3">
+
+<!-- INDICADORES FINANCEIROS -->
+
+<div class="row g-3 mb-3">
 
     <div class="col-12 col-md-6 col-xl-3">
-        <div class="dashboard-card">
 
-            <div class="dashboard-card-top">
-                <h3 class="dashboard-card-title">
-                    <i class="bi bi-truck dashboard-card-icon icon-blue"></i>
-                    Veículos
-                </h3>
+        <div class="dashboard-card h-100">
+
+            <div class="d-flex justify-content-between align-items-start">
+
+                <div>
+
+                    <div class="dashboard-card-title">
+                        <i class="bi bi-cash-stack text-success"></i>
+                        Custo do mês
+                    </div>
+
+                    <div class="dashboard-card-value mt-3">
+                        {{ dinheiro(custo_total_mes) }}
+                    </div>
+
+                </div>
+
+                <div class="fs-3 text-success">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+
             </div>
 
-            <div class="dashboard-card-value">
-                {{ total_veiculos }}
-            </div>
+            <div class="dashboard-card-subtitle mt-2">
 
-            <p class="dashboard-card-subtitle">
-                {% if empresa %}
-                    {{ total_veiculos }}
-                    de
-                    {{ empresa.plano.limite_veiculos }}
-                    permitidos no plano
+                {% if variacao_custo_mes is not none %}
+
+                    {% if variacao_custo_mes > 0 %}
+
+                        <span class="text-danger">
+                            <i class="bi bi-arrow-up"></i>
+                            {{ variacao_custo_mes }}%
+                        </span>
+
+                    {% elif variacao_custo_mes < 0 %}
+
+                        <span class="text-success">
+                            <i class="bi bi-arrow-down"></i>
+                            {{ variacao_custo_mes|abs }}%
+                        </span>
+
+                    {% else %}
+
+                        <span class="text-muted">
+                            Sem alteração
+                        </span>
+
+                    {% endif %}
+
+                    em relação ao mês anterior
+
                 {% else %}
-                    Nenhuma empresa cadastrada
+
+                    Sem base anterior para comparação
+
                 {% endif %}
-            </p>
+
+            </div>
 
         </div>
+
     </div>
 
     <div class="col-12 col-md-6 col-xl-3">
-        <div class="dashboard-card">
 
-            <div class="dashboard-card-top">
-                <h3 class="dashboard-card-title">
-                    <i class="bi bi-person-badge dashboard-card-icon icon-indigo"></i>
-                    Motoristas
-                </h3>
+        <div class="dashboard-card h-100">
+
+            <div class="d-flex justify-content-between align-items-start">
+
+                <div>
+
+                    <div class="dashboard-card-title">
+                        <i class="bi bi-fuel-pump text-primary"></i>
+                        Combustível
+                    </div>
+
+                    <div class="dashboard-card-value mt-3">
+                        {{ dinheiro(total_combustivel_mes) }}
+                    </div>
+
+                </div>
+
+                <div class="fs-3 text-primary">
+                    <i class="bi bi-droplet-half"></i>
+                </div>
+
             </div>
 
-            <div class="dashboard-card-value">
-                {{ total_motoristas }}
-            </div>
-
-            <p class="dashboard-card-subtitle">
-                Total de motoristas cadastrados
+            <p class="dashboard-card-subtitle mt-2 mb-0">
+                {{ total_abastecimentos_mes }} registro(s)
+                ·
+                {{ "%.3f"|format(total_litros_mes)|replace(".", ",") }}
+                litros
             </p>
 
         </div>
+
     </div>
 
     <div class="col-12 col-md-6 col-xl-3">
-        <div class="dashboard-card">
 
-            <div class="dashboard-card-top">
-                <h3 class="dashboard-card-title">
-                    <i class="bi bi-fuel-pump dashboard-card-icon icon-red"></i>
-                    Abastecimentos
-                </h3>
+        <div class="dashboard-card h-100">
+
+            <div class="d-flex justify-content-between align-items-start">
+
+                <div>
+
+                    <div class="dashboard-card-title">
+                        <i class="bi bi-tools text-warning"></i>
+                        Manutenções
+                    </div>
+
+                    <div class="dashboard-card-value mt-3">
+                        {{ dinheiro(total_manutencao_mes) }}
+                    </div>
+
+                </div>
+
+                <div class="fs-3 text-warning">
+                    <i class="bi bi-wrench-adjustable"></i>
+                </div>
+
             </div>
 
-            <div class="dashboard-card-value">
-                {{ total_abastecimentos }}
-            </div>
-
-            <p class="dashboard-card-subtitle">
-                Registros de abastecimento
+            <p class="dashboard-card-subtitle mt-2 mb-0">
+                {{ total_manutencoes_mes }}
+                manutenção(ões) no mês
             </p>
 
         </div>
+
     </div>
 
     <div class="col-12 col-md-6 col-xl-3">
-        <div class="dashboard-card">
 
-            <div class="dashboard-card-top">
-                <h3 class="dashboard-card-title">
-                    <i class="bi bi-journal-text dashboard-card-icon icon-slate"></i>
-                    Diários
-                </h3>
+        <div class="dashboard-card h-100">
+
+            <div class="d-flex justify-content-between align-items-start">
+
+                <div>
+
+                    <div class="dashboard-card-title">
+                        <i class="bi bi-signpost-2 text-info"></i>
+                        Custo por KM
+                    </div>
+
+                    <div class="dashboard-card-value mt-3">
+                        {{ dinheiro(custo_por_km_mes) }}
+                    </div>
+
+                </div>
+
+                <div class="fs-3 text-info">
+                    <i class="bi bi-speedometer"></i>
+                </div>
+
             </div>
 
-            <div class="dashboard-card-value">
-                {{ total_diarios }}
-            </div>
-
-            <p class="dashboard-card-subtitle">
-                Diários de bordo registrados
+            <p class="dashboard-card-subtitle mt-2 mb-0">
+                {{ "{:,}".format(total_km_mes)|replace(",", ".") }}
+                km em {{ total_diarios_mes }} diário(s)
             </p>
 
         </div>
+
     </div>
 
 </div>
+
+
+<!-- SITUAÇÃO DA FROTA -->
+
+<div class="row g-3 mb-3">
+
+    <div class="col-6 col-md-3">
+
+        <div class="section-card h-100">
+
+            <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                    <div class="text-muted small">
+                        Veículos cadastrados
+                    </div>
+
+                    <div class="fs-3 fw-bold mt-1">
+                        {{ total_veiculos }}
+                    </div>
+
+                </div>
+
+                <i class="bi bi-truck fs-2 text-primary"></i>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-6 col-md-3">
+
+        <div class="section-card h-100">
+
+            <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                    <div class="text-muted small">
+                        Veículos ativos
+                    </div>
+
+                    <div class="fs-3 fw-bold mt-1 text-success">
+                        {{ veiculos_ativos }}
+                    </div>
+
+                </div>
+
+                <i class="bi bi-check-circle fs-2 text-success"></i>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-6 col-md-3">
+
+        <div class="section-card h-100">
+
+            <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                    <div class="text-muted small">
+                        Em manutenção
+                    </div>
+
+                    <div class="fs-3 fw-bold mt-1 text-warning">
+                        {{ veiculos_em_manutencao }}
+                    </div>
+
+                </div>
+
+                <i class="bi bi-tools fs-2 text-warning"></i>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-6 col-md-3">
+
+        <div class="section-card h-100">
+
+            <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                    <div class="text-muted small">
+                        Motoristas
+                    </div>
+
+                    <div class="fs-3 fw-bold mt-1">
+                        {{ total_motoristas }}
+                    </div>
+
+                </div>
+
+                <i class="bi bi-person-badge fs-2 text-secondary"></i>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ALERTAS E RESUMO -->
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-xl-8">
+
+        <div class="section-card h-100">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+
+                <div>
+
+                    <h2 class="fs-5 fw-bold mb-1">
+                        Alertas operacionais
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Situações que precisam de atenção
+                    </p>
+
+                </div>
+
+                <i class="bi bi-bell fs-3 text-warning"></i>
+
+            </div>
+
+            <div class="row g-3">
+
+                {% for alerta in alertas %}
+
+                    <div class="col-12 col-md-6">
+
+                        {% if alerta.url %}
+
+                            <a
+                                href="{{ alerta.url }}"
+                                class="text-decoration-none text-reset"
+                            >
+
+                        {% endif %}
+
+                        <div class="border rounded-1 p-3 h-100">
+
+                            <div class="d-flex gap-3">
+
+                                <div
+                                    class="
+                                        fs-4
+                                        {% if alerta.tipo == 'danger' %}
+                                            text-danger
+                                        {% elif alerta.tipo == 'warning' %}
+                                            text-warning
+                                        {% elif alerta.tipo == 'success' %}
+                                            text-success
+                                        {% else %}
+                                            text-primary
+                                        {% endif %}
+                                    "
+                                >
+                                    <i class="bi {{ alerta.icone }}"></i>
+                                </div>
+
+                                <div>
+
+                                    <strong class="d-block mb-1">
+                                        {{ alerta.titulo }}
+                                    </strong>
+
+                                    <span class="text-muted">
+                                        {{ alerta.texto }}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {% if alerta.url %}
+
+                            </a>
+
+                        {% endif %}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-12 col-xl-4">
+
+        <div class="section-card h-100">
+
+            <h2 class="fs-5 fw-bold mb-3">
+                Resumo do mês
+            </h2>
+
+            <div class="d-flex justify-content-between border-bottom py-3">
+
+                <span class="text-muted">
+                    Preço médio por litro
+                </span>
+
+                <strong>
+                    R$
+                    {{
+                        "%.3f"|format(preco_medio_litro)
+                        |replace(".", ",")
+                    }}
+                </strong>
+
+            </div>
+
+            <div class="d-flex justify-content-between border-bottom py-3">
+
+                <span class="text-muted">
+                    Diários em andamento
+                </span>
+
+                <strong
+                    class="{% if total_diarios_em_andamento %}text-warning{% endif %}"
+                >
+                    {{ total_diarios_em_andamento }}
+                </strong>
+
+            </div>
+
+            <div class="d-flex justify-content-between border-bottom py-3">
+
+                <span class="text-muted">
+                    CNHs em alerta
+                </span>
+
+                <strong
+                    class="{% if total_cnh_alerta %}text-danger{% endif %}"
+                >
+                    {{ total_cnh_alerta }}
+                </strong>
+
+            </div>
+
+            <div class="d-flex justify-content-between border-bottom py-3">
+
+                <span class="text-muted">
+                    Próximas manutenções
+                </span>
+
+                <strong
+                    class="{% if total_manutencoes_proximas %}text-warning{% endif %}"
+                >
+                    {{ total_manutencoes_proximas }}
+                </strong>
+
+            </div>
+
+            <div class="d-flex justify-content-between py-3">
+
+                <span class="text-muted">
+                    Sem movimentação
+                </span>
+
+                <strong>
+                    {{ total_sem_movimento }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- GRÁFICOS -->
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-xl-8">
+
+        <div class="section-card">
+
+            <div class="mb-3">
+
+                <h2 class="fs-5 fw-bold mb-1">
+                    Evolução dos custos
+                </h2>
+
+                <p class="text-muted mb-0">
+                    Combustível e manutenção nos últimos seis meses
+                </p>
+
+            </div>
+
+            <div style="height: 330px;">
+                <canvas id="graficoCustos"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-12 col-xl-4">
+
+        <div class="section-card">
+
+            <div class="mb-3">
+
+                <h2 class="fs-5 fw-bold mb-1">
+                    Situação dos veículos
+                </h2>
+
+                <p class="text-muted mb-0">
+                    Distribuição atual da frota
+                </p>
+
+            </div>
+
+            <div style="height: 330px;">
+                <canvas id="graficoStatus"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-xl-7">
+
+        <div class="section-card h-100">
+
+            <div class="d-flex justify-content-between align-items-start mb-3">
+
+                <div>
+
+                    <h2 class="fs-5 fw-bold mb-1">
+                        Veículos com maior custo
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Ranking consolidado dos últimos seis meses
+                    </p>
+
+                </div>
+
+                {% if participacao_maior_custo is not none %}
+
+                    <span class="badge text-bg-light border">
+                        Líder representa
+                        {{ participacao_maior_custo }}%
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+            {% if ranking_veiculos %}
+
+                <div style="height: 300px;">
+                    <canvas id="graficoRanking"></canvas>
+                </div>
+
+            {% else %}
+
+                <div class="text-center py-5 text-muted">
+                    Não há custos suficientes para montar o ranking.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <div class="col-12 col-xl-5">
+
+        <div class="section-card h-100">
+
+            <div class="mb-3">
+
+                <h2 class="fs-5 fw-bold mb-1">
+                    Fleet Intelligence
+                </h2>
+
+                <p class="text-muted mb-0">
+                    Leitura rápida da operação
+                </p>
+
+            </div>
+
+            {% if ranking_veiculos %}
+
+                {% set lider = ranking_veiculos[0] %}
+
+                <div class="border rounded-1 p-3 mb-3">
+
+                    <div class="d-flex gap-3">
+
+                        <i class="bi bi-graph-up-arrow fs-4 text-primary"></i>
+
+                        <div>
+
+                            <strong class="d-block">
+                                Veículo de maior custo
+                            </strong>
+
+                            <span class="text-muted">
+                                {{ lider.veiculo.placa }}
+                                acumulou
+                                {{ dinheiro(lider.total) }}
+                                nos últimos seis meses.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+            {% if variacao_custo_mes is not none %}
+
+                <div class="border rounded-1 p-3 mb-3">
+
+                    <div class="d-flex gap-3">
+
+                        <i
+                            class="
+                                bi
+                                {% if variacao_custo_mes > 0 %}
+                                    bi-arrow-up-circle text-danger
+                                {% elif variacao_custo_mes < 0 %}
+                                    bi-arrow-down-circle text-success
+                                {% else %}
+                                    bi-dash-circle text-secondary
+                                {% endif %}
+                                fs-4
+                            "
+                        ></i>
+
+                        <div>
+
+                            <strong class="d-block">
+                                Comparativo mensal
+                            </strong>
+
+                            <span class="text-muted">
+
+                                {% if variacao_custo_mes > 0 %}
+
+                                    Os custos aumentaram
+                                    {{ variacao_custo_mes }}%
+                                    em relação ao mês anterior.
+
+                                {% elif variacao_custo_mes < 0 %}
+
+                                    Os custos reduziram
+                                    {{ variacao_custo_mes|abs }}%
+                                    em relação ao mês anterior.
+
+                                {% else %}
+
+                                    Os custos permaneceram estáveis.
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endif %}
+
+            <div class="border rounded-1 p-3">
+
+                <div class="d-flex gap-3">
+
+                    <i class="bi bi-speedometer2 fs-4 text-info"></i>
+
+                    <div>
+
+                        <strong class="d-block">
+                            Eficiência operacional
+                        </strong>
+
+                        <span class="text-muted">
+                            A frota registrou
+                            {{ "{:,}".format(total_km_mes)|replace(",", ".") }}
+                            km neste mês, com custo médio de
+                            {{ dinheiro(custo_por_km_mes) }}
+                            por quilômetro.
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ATIVIDADES RECENTES -->
+
+<div class="section-card">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+
+        <div>
+
+            <h2 class="fs-5 fw-bold mb-1">
+                Atividades recentes
+            </h2>
+
+            <p class="text-muted mb-0">
+                Últimos registros da operação
+            </p>
+
+        </div>
+
+    </div>
+
+    {% if atividades_recentes %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+
+                    <tr>
+                        <th>Data</th>
+                        <th>Tipo</th>
+                        <th>Registro</th>
+                        <th>Descrição</th>
+                        <th class="text-end">Valor</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for atividade in atividades_recentes %}
+
+                        <tr>
+
+                            <td>
+                                {{ atividade.data.strftime("%d/%m/%Y") }}
+                            </td>
+
+                            <td>
+
+                                {% if atividade.tipo == "abastecimento" %}
+
+                                    <span class="badge text-bg-primary">
+                                        <i class="bi bi-fuel-pump me-1"></i>
+                                        Abastecimento
+                                    </span>
+
+                                {% elif atividade.tipo == "manutencao" %}
+
+                                    <span class="badge text-bg-warning">
+                                        <i class="bi bi-tools me-1"></i>
+                                        Manutenção
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge text-bg-secondary">
+                                        <i class="bi bi-journal-text me-1"></i>
+                                        Diário
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ atividade.titulo }}
+                                </strong>
+                            </td>
+
+                            <td class="text-muted">
+                                {{ atividade.descricao }}
+                            </td>
+
+                            <td class="text-end">
+
+                                {% if atividade.valor is not none %}
+
+                                    {% if atividade.unidade == "R$" %}
+
+                                        <strong>
+                                            {{ dinheiro(atividade.valor) }}
+                                        </strong>
+
+                                    {% else %}
+
+                                        <strong>
+                                            {{ atividade.valor }}
+                                            {{ atividade.unidade }}
+                                        </strong>
+
+                                    {% endif %}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-clock-history fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhuma atividade registrada
+            </h3>
+
+            <p class="text-muted mb-0">
+                Os registros mais recentes aparecerão aqui.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const meses = {{ grafico_meses|tojson }};
+
+    const valoresCombustivel = (
+        {{ grafico_combustivel|tojson }}
+    );
+
+    const valoresManutencao = (
+        {{ grafico_manutencao|tojson }}
+    );
+
+    const rankingLabels = (
+        {{ grafico_ranking_labels|tojson }}
+    );
+
+    const rankingValores = (
+        {{ grafico_ranking_valores|tojson }}
+    );
+
+    const statusLabels = (
+        {{ grafico_status_labels|tojson }}
+    );
+
+    const statusValores = (
+        {{ grafico_status_valores|tojson }}
+    );
+
+    const formatadorDinheiro = new Intl.NumberFormat(
+        "pt-BR",
+        {
+            style: "currency",
+            currency: "BRL"
+        }
+    );
+
+    const elementoCustos = document.getElementById(
+        "graficoCustos"
+    );
+
+    if (elementoCustos) {
+        new Chart(
+            elementoCustos,
+            {
+                type: "bar",
+
+                data: {
+                    labels: meses,
+
+                    datasets: [
+                        {
+                            label: "Combustível",
+                            data: valoresCombustivel,
+                            backgroundColor: (
+                                "rgba(37, 99, 235, 0.75)"
+                            ),
+                            borderColor: (
+                                "rgb(37, 99, 235)"
+                            ),
+                            borderWidth: 1
+                        },
+                        {
+                            label: "Manutenção",
+                            data: valoresManutencao,
+                            backgroundColor: (
+                                "rgba(245, 158, 11, 0.75)"
+                            ),
+                            borderColor: (
+                                "rgb(245, 158, 11)"
+                            ),
+                            borderWidth: 1
+                        }
+                    ]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    interaction: {
+                        mode: "index",
+                        intersect: false
+                    },
+
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+
+                            ticks: {
+                                callback: function (valor) {
+                                    return (
+                                        formatadorDinheiro
+                                            .format(valor)
+                                    );
+                                }
+                            }
+                        }
+                    },
+
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (contexto) {
+                                    return (
+                                        contexto.dataset.label
+                                        + ": "
+                                        + formatadorDinheiro
+                                            .format(
+                                                contexto.raw
+                                            )
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+    const elementoStatus = document.getElementById(
+        "graficoStatus"
+    );
+
+    if (elementoStatus) {
+        new Chart(
+            elementoStatus,
+            {
+                type: "doughnut",
+
+                data: {
+                    labels: statusLabels,
+
+                    datasets: [
+                        {
+                            data: statusValores,
+
+                            backgroundColor: [
+                                "rgba(22, 163, 74, 0.78)",
+                                "rgba(245, 158, 11, 0.78)",
+                                "rgba(100, 116, 139, 0.78)"
+                            ],
+
+                            borderWidth: 1
+                        }
+                    ]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    plugins: {
+                        legend: {
+                            position: "bottom"
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+    const elementoRanking = document.getElementById(
+        "graficoRanking"
+    );
+
+    if (elementoRanking) {
+        new Chart(
+            elementoRanking,
+            {
+                type: "bar",
+
+                data: {
+                    labels: rankingLabels,
+
+                    datasets: [
+                        {
+                            label: "Custo total",
+                            data: rankingValores,
+                            backgroundColor: (
+                                "rgba(15, 23, 42, 0.78)"
+                            ),
+                            borderColor: (
+                                "rgb(15, 23, 42)"
+                            ),
+                            borderWidth: 1
+                        }
+                    ]
+                },
+
+                options: {
+                    indexAxis: "y",
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+
+                            ticks: {
+                                callback: function (valor) {
+                                    return (
+                                        formatadorDinheiro
+                                            .format(valor)
+                                    );
+                                }
+                            }
+                        }
+                    },
+
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+
+                        tooltip: {
+                            callbacks: {
+                                label: function (contexto) {
+                                    return (
+                                        formatadorDinheiro
+                                            .format(
+                                                contexto.raw
+                                            )
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+});
+</script>
+
 {% endblock %}

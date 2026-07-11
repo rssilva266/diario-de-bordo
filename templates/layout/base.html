@@ -87,8 +87,15 @@
 
                     <i class="bi bi-truck brand-icon"></i>
 
-                    <span class="brand-text fw-bold">
-                        MSM Fleet
+                    <span
+                        class="brand-text fw-bold text-truncate"
+                        title="{{ current_user.empresa.nome_fantasia or current_user.empresa.razao_social }}"
+                    >
+                        {{
+                            current_user.empresa.nome_fantasia
+                            or current_user.empresa.razao_social
+                            or "Fleet Manager"
+                        }}
                     </span>
 
                 </div>

@@ -1,13 +1,870 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
+
 
 {% block titulo %}
-<h1>NOME DA TELA</h1>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Configurações da empresa
+        </h1>
+
+        <p class="text-muted mb-0">
+            Dados institucionais, contatos e informações dos relatórios
+        </p>
+    </div>
+
+</div>
+
 {% endblock %}
 
+
 {% block conteudo %}
-<div class="card">
-    <div class="card-body">
-        Tela em desenvolvimento.
+
+{% if erros %}
+
+    <div class="alert alert-warning" role="alert">
+
+        <div class="d-flex gap-2">
+
+            <i class="bi bi-exclamation-triangle-fill"></i>
+
+            <div>
+
+                <strong>
+                    Verifique as informações:
+                </strong>
+
+                <ul class="mb-0 mt-1">
+
+                    {% for erro in erros %}
+                        <li>{{ erro }}</li>
+                    {% endfor %}
+
+                </ul>
+
+            </div>
+
+        </div>
+
     </div>
-</div>
+
+{% endif %}
+
+
+<div
+    class="alert alert-warning d-none"
+    id="alertaValidacaoConfiguracoes"
+    role="alert"
+></div>
+
+
+<form
+    method="POST"
+    action="{{ url_for('configuracoes.configuracoes_empresa') }}"
+    enctype="multipart/form-data"
+    id="formConfiguracoesEmpresa"
+    novalidate
+>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-xl-8">
+
+            <div class="section-card mb-3">
+
+                <div class="mb-4">
+
+                    <h2 class="fs-5 fw-bold mb-1">
+                        Identificação
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Informações principais da empresa
+                    </p>
+
+                </div>
+
+                <div class="row g-3">
+
+                    <div class="col-12 col-md-8">
+
+                        <label class="form-label">
+                            Razão social
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <input
+                            type="text"
+                            name="razao_social"
+                            class="form-control"
+                            maxlength="150"
+                            value="{{ dados.razao_social }}"
+                            data-label="Razão social"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-4">
+
+                        <label class="form-label">
+                            CNPJ
+                        </label>
+
+                        <input
+                            type="text"
+                            name="cnpj"
+                            id="campoCnpj"
+                            class="form-control"
+                            maxlength="18"
+                            value="{{ dados.cnpj }}"
+                            placeholder="00.000.000/0000-00"
+                            inputmode="numeric"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-6">
+
+                        <label class="form-label">
+                            Nome fantasia
+                        </label>
+
+                        <input
+                            type="text"
+                            name="nome_fantasia"
+                            class="form-control"
+                            maxlength="150"
+                            value="{{ dados.nome_fantasia }}"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-6">
+
+                        <label class="form-label">
+                            Responsável
+                        </label>
+
+                        <input
+                            type="text"
+                            name="responsavel"
+                            class="form-control"
+                            maxlength="150"
+                            value="{{ dados.responsavel }}"
+                            placeholder="Nome do responsável pela empresa"
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="section-card mb-3">
+
+                <div class="mb-4">
+
+                    <h2 class="fs-5 fw-bold mb-1">
+                        Contato
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Canais oficiais da empresa
+                    </p>
+
+                </div>
+
+                <div class="row g-3">
+
+                    <div class="col-12 col-md-4">
+
+                        <label class="form-label">
+                            E-mail
+                        </label>
+
+                        <input
+                            type="email"
+                            name="email"
+                            class="form-control"
+                            maxlength="150"
+                            value="{{ dados.email }}"
+                            placeholder="contato@empresa.com.br"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-4">
+
+                        <label class="form-label">
+                            Telefone
+                        </label>
+
+                        <input
+                            type="text"
+                            name="telefone"
+                            class="form-control campo-telefone"
+                            maxlength="20"
+                            value="{{ dados.telefone }}"
+                            inputmode="numeric"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-4">
+
+                        <label class="form-label">
+                            WhatsApp
+                        </label>
+
+                        <input
+                            type="text"
+                            name="whatsapp"
+                            class="form-control campo-telefone"
+                            maxlength="20"
+                            value="{{ dados.whatsapp }}"
+                            inputmode="numeric"
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="section-card mb-3">
+
+                <div class="mb-4">
+
+                    <h2 class="fs-5 fw-bold mb-1">
+                        Endereço
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Endereço utilizado nos documentos e relatórios
+                    </p>
+
+                </div>
+
+                <div class="row g-3">
+
+                    <div class="col-12 col-md-3">
+
+                        <label class="form-label">
+                            CEP
+                        </label>
+
+                        <input
+                            type="text"
+                            name="cep"
+                            id="campoCep"
+                            class="form-control"
+                            maxlength="9"
+                            value="{{ dados.cep }}"
+                            placeholder="00000-000"
+                            inputmode="numeric"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-7">
+
+                        <label class="form-label">
+                            Logradouro
+                        </label>
+
+                        <input
+                            type="text"
+                            name="logradouro"
+                            class="form-control"
+                            maxlength="180"
+                            value="{{ dados.logradouro }}"
+                            placeholder="Rua, avenida ou rodovia"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-2">
+
+                        <label class="form-label">
+                            Número
+                        </label>
+
+                        <input
+                            type="text"
+                            name="numero"
+                            class="form-control"
+                            maxlength="20"
+                            value="{{ dados.numero }}"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-4">
+
+                        <label class="form-label">
+                            Complemento
+                        </label>
+
+                        <input
+                            type="text"
+                            name="complemento"
+                            class="form-control"
+                            maxlength="120"
+                            value="{{ dados.complemento }}"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-3">
+
+                        <label class="form-label">
+                            Bairro
+                        </label>
+
+                        <input
+                            type="text"
+                            name="bairro"
+                            class="form-control"
+                            maxlength="100"
+                            value="{{ dados.bairro }}"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-3">
+
+                        <label class="form-label">
+                            Cidade
+                        </label>
+
+                        <input
+                            type="text"
+                            name="cidade"
+                            class="form-control"
+                            maxlength="100"
+                            value="{{ dados.cidade }}"
+                        >
+
+                    </div>
+
+                    <div class="col-12 col-md-2">
+
+                        <label class="form-label">
+                            Estado
+                        </label>
+
+                        <input
+                            type="text"
+                            name="estado"
+                            class="form-control text-uppercase"
+                            maxlength="2"
+                            value="{{ dados.estado }}"
+                            placeholder="AC"
+                        >
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="section-card">
+
+                <div class="mb-4">
+
+                    <h2 class="fs-5 fw-bold mb-1">
+                        Relatórios em PDF
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Preferências que serão aplicadas aos documentos
+                    </p>
+
+                </div>
+
+                <div class="form-check form-switch mb-3">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        role="switch"
+                        name="exibir_logo_relatorios"
+                        id="exibirLogoRelatorios"
+                        {% if dados.exibir_logo_relatorios %}
+                            checked
+                        {% endif %}
+                    >
+
+                    <label
+                        class="form-check-label"
+                        for="exibirLogoRelatorios"
+                    >
+                        Exibir a logo no cabeçalho dos relatórios
+                    </label>
+
+                </div>
+
+                <div>
+
+                    <label class="form-label">
+                        Texto do rodapé
+                    </label>
+
+                    <textarea
+                        name="rodape_relatorios"
+                        class="form-control"
+                        rows="3"
+                        maxlength="300"
+                        placeholder="Ex.: Documento emitido pelo sistema de gestão de frota."
+                    >{{ dados.rodape_relatorios }}</textarea>
+
+                    <div class="form-text">
+                        Esse texto será usado quando ajustarmos o layout final dos PDFs.
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="col-12 col-xl-4">
+
+            <div class="section-card mb-3">
+
+                <div class="mb-4">
+
+                    <h2 class="fs-5 fw-bold mb-1">
+                        Logo da empresa
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        JPG, PNG ou WEBP, com até 2 MB
+                    </p>
+
+                </div>
+
+                <div
+                    class="border d-flex align-items-center justify-content-center mb-3"
+                    style="min-height: 190px; background: #f8fafc;"
+                >
+
+                    {% if configuracao.logo %}
+
+                        <img
+                            src="{{ url_for('static', filename=configuracao.logo) }}"
+                            alt="Logo da empresa"
+                            id="previewLogoEmpresa"
+                            style="max-width: 90%; max-height: 160px; object-fit: contain;"
+                        >
+
+                    {% else %}
+
+                        <div
+                            class="text-center text-muted"
+                            id="placeholderLogoEmpresa"
+                        >
+                            <i class="bi bi-image fs-1"></i>
+
+                            <div class="mt-2">
+                                Nenhuma logo cadastrada
+                            </div>
+                        </div>
+
+                        <img
+                            src=""
+                            alt="Prévia da logo"
+                            id="previewLogoEmpresa"
+                            class="d-none"
+                            style="max-width: 90%; max-height: 160px; object-fit: contain;"
+                        >
+
+                    {% endif %}
+
+                </div>
+
+                <input
+                    type="file"
+                    name="logo"
+                    id="campoLogoEmpresa"
+                    class="form-control"
+                    accept=".jpg,.jpeg,.png,.webp"
+                >
+
+                {% if configuracao.logo %}
+
+                    <div class="form-check mt-3">
+
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            name="remover_logo"
+                            value="1"
+                            id="removerLogoEmpresa"
+                        >
+
+                        <label
+                            class="form-check-label"
+                            for="removerLogoEmpresa"
+                        >
+                            Remover a logo atual
+                        </label>
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="section-card mb-3">
+
+                <div class="d-flex align-items-center justify-content-between mb-3">
+
+                    <div>
+
+                        <h2 class="fs-5 fw-bold mb-1">
+                            Plano atual
+                        </h2>
+
+                        <p class="text-muted mb-0">
+                            Resumo da assinatura
+                        </p>
+
+                    </div>
+
+                    <i class="bi bi-box-seam fs-3 text-primary"></i>
+
+                </div>
+
+                <div class="fs-4 fw-bold mb-3">
+                    {{ plano.nome }}
+                </div>
+
+                <div class="d-flex justify-content-between border-bottom py-3">
+
+                    <span class="text-muted">
+                        Veículos cadastrados
+                    </span>
+
+                    <strong>
+                        {{ total_veiculos }}
+                    </strong>
+
+                </div>
+
+                <div class="d-flex justify-content-between py-3">
+
+                    <span class="text-muted">
+                        Limite do plano
+                    </span>
+
+                    <strong>
+                        {{ plano.limite_veiculos }}
+                    </strong>
+
+                </div>
+
+                {% set percentual = 0 %}
+
+                {% if plano.limite_veiculos %}
+                    {% set percentual = (total_veiculos * 100 / plano.limite_veiculos) %}
+                {% endif %}
+
+                <div
+                    class="progress"
+                    role="progressbar"
+                    aria-label="Uso do plano"
+                    aria-valuenow="{{ percentual }}"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    style="height: 8px;"
+                >
+                    <div
+                        class="progress-bar"
+                        style="width: {{ [percentual, 100]|min }}%;"
+                    ></div>
+                </div>
+
+                <div class="small text-muted mt-2">
+                    O controle completo dos planos será o próximo módulo.
+                </div>
+
+            </div>
+
+
+            <div class="d-grid">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-lg"
+                >
+                    <i class="bi bi-check-lg me-1"></i>
+                    Salvar configurações
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</form>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const formulario = document.getElementById(
+        "formConfiguracoesEmpresa"
+    );
+
+    const alerta = document.getElementById(
+        "alertaValidacaoConfiguracoes"
+    );
+
+    const campoCnpj = document.getElementById(
+        "campoCnpj"
+    );
+
+    const campoCep = document.getElementById(
+        "campoCep"
+    );
+
+    const campoLogo = document.getElementById(
+        "campoLogoEmpresa"
+    );
+
+    const previewLogo = document.getElementById(
+        "previewLogoEmpresa"
+    );
+
+    const placeholderLogo = document.getElementById(
+        "placeholderLogoEmpresa"
+    );
+
+    function somenteDigitos(valor) {
+        return String(valor || "").replace(/\D/g, "");
+    }
+
+    function aplicarMascaraCnpj(valor) {
+        const numeros = somenteDigitos(valor).slice(0, 14);
+
+        return numeros
+            .replace(/^(\d{2})(\d)/, "$1.$2")
+            .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+            .replace(/\.(\d{3})(\d)/, ".$1/$2")
+            .replace(/(\d{4})(\d)/, "$1-$2");
+    }
+
+    function aplicarMascaraCep(valor) {
+        const numeros = somenteDigitos(valor).slice(0, 8);
+
+        return numeros.replace(
+            /^(\d{5})(\d)/,
+            "$1-$2"
+        );
+    }
+
+    function aplicarMascaraTelefone(valor) {
+        const numeros = somenteDigitos(valor).slice(0, 11);
+
+        if (numeros.length <= 10) {
+            return numeros
+                .replace(/^(\d{2})(\d)/, "($1) $2")
+                .replace(/(\d{4})(\d)/, "$1-$2");
+        }
+
+        return numeros
+            .replace(/^(\d{2})(\d)/, "($1) $2")
+            .replace(/(\d{5})(\d)/, "$1-$2");
+    }
+
+    if (campoCnpj) {
+        campoCnpj.addEventListener(
+            "input",
+            function () {
+                campoCnpj.value = aplicarMascaraCnpj(
+                    campoCnpj.value
+                );
+            }
+        );
+    }
+
+    if (campoCep) {
+        campoCep.addEventListener(
+            "input",
+            function () {
+                campoCep.value = aplicarMascaraCep(
+                    campoCep.value
+                );
+            }
+        );
+    }
+
+    document
+        .querySelectorAll(".campo-telefone")
+        .forEach(function (campo) {
+            campo.addEventListener(
+                "input",
+                function () {
+                    campo.value = aplicarMascaraTelefone(
+                        campo.value
+                    );
+                }
+            );
+        });
+
+    if (campoLogo) {
+        campoLogo.addEventListener(
+            "change",
+            function () {
+                const arquivo = campoLogo.files[0];
+
+                if (!arquivo) {
+                    return;
+                }
+
+                if (arquivo.size > 2 * 1024 * 1024) {
+                    campoLogo.value = "";
+
+                    alerta.innerHTML = `
+                        <strong>Verifique a logo:</strong>
+                        o arquivo deve ter no máximo 2 MB.
+                    `;
+
+                    alerta.classList.remove("d-none");
+                    alerta.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center"
+                    });
+
+                    return;
+                }
+
+                const urlTemporaria = URL.createObjectURL(
+                    arquivo
+                );
+
+                previewLogo.src = urlTemporaria;
+                previewLogo.classList.remove("d-none");
+
+                if (placeholderLogo) {
+                    placeholderLogo.classList.add("d-none");
+                }
+            }
+        );
+    }
+
+    formulario.addEventListener(
+        "submit",
+        function (event) {
+            const erros = [];
+            let primeiroCampo = null;
+
+            formulario
+                .querySelectorAll("[required]")
+                .forEach(function (campo) {
+                    if (!String(campo.value || "").trim()) {
+                        erros.push(
+                            (campo.dataset.label || "Campo obrigatório")
+                            + " precisa ser preenchido."
+                        );
+
+                        campo.classList.add("is-invalid");
+
+                        if (!primeiroCampo) {
+                            primeiroCampo = campo;
+                        }
+                    }
+                });
+
+            const cnpj = somenteDigitos(
+                campoCnpj ? campoCnpj.value : ""
+            );
+
+            if (cnpj && cnpj.length !== 14) {
+                erros.push(
+                    "O CNPJ precisa possuir 14 números."
+                );
+
+                campoCnpj.classList.add("is-invalid");
+
+                if (!primeiroCampo) {
+                    primeiroCampo = campoCnpj;
+                }
+            }
+
+            const cep = somenteDigitos(
+                campoCep ? campoCep.value : ""
+            );
+
+            if (cep && cep.length !== 8) {
+                erros.push(
+                    "O CEP precisa possuir 8 números."
+                );
+
+                campoCep.classList.add("is-invalid");
+
+                if (!primeiroCampo) {
+                    primeiroCampo = campoCep;
+                }
+            }
+
+            if (erros.length > 0) {
+                event.preventDefault();
+
+                alerta.innerHTML = `
+                    <div class="d-flex gap-2">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+
+                        <div>
+                            <strong>Verifique as informações:</strong>
+
+                            <ul class="mb-0 mt-1">
+                                ${erros.map(
+                                    function (erro) {
+                                        return "<li>" + erro + "</li>";
+                                    }
+                                ).join("")}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+
+                alerta.classList.remove("d-none");
+
+                alerta.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+
+                if (primeiroCampo) {
+                    primeiroCampo.focus();
+                }
+            }
+        }
+    );
+
+    formulario
+        .querySelectorAll("input, textarea, select")
+        .forEach(function (campo) {
+            campo.addEventListener(
+                "input",
+                function () {
+                    campo.classList.remove("is-invalid");
+                }
+            );
+        });
+
+});
+</script>
+
 {% endblock %}

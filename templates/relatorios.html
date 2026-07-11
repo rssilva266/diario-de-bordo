@@ -1,13 +1,857 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
+
+{% macro dinheiro(valor) -%}
+R$ {{
+    "{:,.2f}".format(valor or 0)
+    .replace(",", "X")
+    .replace(".", ",")
+    .replace("X", ".")
+}}
+{%- endmacro %}
 
 {% block titulo %}
-<h1>NOME DA TELA</h1>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Relatórios
+        </h1>
+
+        <p class="text-muted mb-0">
+            Custos, desempenho e inteligência da frota
+        </p>
+    </div>
+
+    <a
+        href="{{ url_pdf }}"
+        class="btn btn-danger"
+    >
+        <i class="bi bi-file-earmark-pdf me-1"></i>
+        Exportar PDF
+    </a>
+
+</div>
+
 {% endblock %}
 
 {% block conteudo %}
-<div class="card">
-    <div class="card-body">
-        Tela em desenvolvimento.
-    </div>
+
+<div class="section-card mb-3">
+
+    <form
+        method="GET"
+        action="{{ url_for('relatorios.listar_relatorios') }}"
+    >
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-12 col-md-3">
+
+                <label class="form-label">
+                    Veículo
+                </label>
+
+                <select
+                    name="veiculo_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos os veículos
+                    </option>
+
+                    {% for veiculo in veiculos %}
+                        <option
+                            value="{{ veiculo.id }}"
+                            {% if veiculo_filtro == veiculo.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ veiculo.placa }} — {{ veiculo.modelo }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-3">
+
+                <label class="form-label">
+                    Motorista
+                </label>
+
+                <select
+                    name="motorista_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos os motoristas
+                    </option>
+
+                    {% for motorista in motoristas %}
+                        <option
+                            value="{{ motorista.id }}"
+                            {% if motorista_filtro == motorista.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ motorista.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-2">
+
+                <label class="form-label">
+                    Obra
+                </label>
+
+                <select
+                    name="obra_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todas as obras
+                    </option>
+
+                    {% for obra in obras %}
+                        <option
+                            value="{{ obra.id }}"
+                            {% if obra_filtro == obra.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ obra.codigo }} — {{ obra.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-2">
+
+                <label class="form-label">
+                    Tipo de custo
+                </label>
+
+                <select
+                    name="tipo_custo"
+                    class="form-select"
+                >
+                    <option
+                        value=""
+                        {% if not tipo_custo_filtro %}
+                            selected
+                        {% endif %}
+                    >
+                        Todos
+                    </option>
+
+                    <option
+                        value="Combustível"
+                        {% if tipo_custo_filtro == "Combustível" %}
+                            selected
+                        {% endif %}
+                    >
+                        Combustível
+                    </option>
+
+                    <option
+                        value="Manutenção"
+                        {% if tipo_custo_filtro == "Manutenção" %}
+                            selected
+                        {% endif %}
+                    >
+                        Manutenção
+                    </option>
+                </select>
+
+            </div>
+
+            <div class="col-6 col-md-1">
+
+                <label class="form-label">
+                    Início
+                </label>
+
+                <input
+                    type="date"
+                    name="data_inicio"
+                    class="form-control"
+                    value="{{ data_inicio }}"
+                >
+
+            </div>
+
+            <div class="col-6 col-md-1">
+
+                <label class="form-label">
+                    Final
+                </label>
+
+                <input
+                    type="date"
+                    name="data_fim"
+                    class="form-control"
+                    value="{{ data_fim }}"
+                >
+
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    <i class="bi bi-funnel me-1"></i>
+                    Aplicar filtros
+                </button>
+
+                <a
+                    href="{{ url_for('relatorios.listar_relatorios') }}"
+                    class="btn btn-outline-secondary"
+                >
+                    Limpar
+                </a>
+
+            </div>
+
+        </div>
+
+    </form>
+
+    {% if motorista_filtro %}
+        <div class="alert alert-info mt-3 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+
+            Manutenções não possuem motorista vinculado e,
+            por isso, não entram no consolidado quando o filtro
+            de motorista está ativo.
+        </div>
+    {% endif %}
+
 </div>
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-md-6 col-xl-3">
+
+        <div class="dashboard-card h-100">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-fuel-pump icon-blue"></i>
+                Combustível
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ dinheiro(total_combustivel) }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                {{ total_abastecimentos }} abastecimento(s)
+                ·
+                {{ "%.3f"|format(total_litros)|replace(".", ",") }} L
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+
+        <div class="dashboard-card h-100">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-tools text-warning"></i>
+                Manutenções
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ dinheiro(total_manutencao) }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                {{ total_manutencoes }} registro(s) no período
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+
+        <div class="dashboard-card h-100">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-cash-stack text-success"></i>
+                Custo total
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ dinheiro(total_custos) }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Combustível e manutenção
+            </p>
+
+        </div>
+
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+
+        <div class="dashboard-card h-100">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-signpost-2 text-primary"></i>
+                Custo por KM
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ dinheiro(custo_por_km) }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                {{ "{:,}".format(total_km)|replace(",", ".") }}
+                km em {{ total_diarios }} diário(s)
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-lg-8">
+
+        <div class="section-card h-100">
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+
+                <div>
+                    <h2 class="fs-5 fw-bold mb-1">
+                        Fleet Intelligence
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Análises automáticas baseadas nos dados da frota
+                    </p>
+                </div>
+
+                <i class="bi bi-lightbulb fs-3 text-warning"></i>
+
+            </div>
+
+            <div class="row g-3">
+
+                {% for insight in insights %}
+
+                    <div class="col-12 col-md-6">
+
+                        <div class="border rounded-1 p-3 h-100">
+
+                            <div class="d-flex gap-3">
+
+                                <i
+                                    class="bi {{ insight.icone }} fs-4
+                                    {% if insight.tipo == 'alerta' %}
+                                        text-warning
+                                    {% elif insight.tipo == 'sucesso' %}
+                                        text-success
+                                    {% else %}
+                                        text-primary
+                                    {% endif %}"
+                                ></i>
+
+                                <div>
+
+                                    <strong class="d-block mb-1">
+                                        {{ insight.titulo }}
+                                    </strong>
+
+                                    <span class="text-muted">
+                                        {{ insight.texto }}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-12 col-lg-4">
+
+        <div class="section-card h-100">
+
+            <h2 class="fs-5 fw-bold mb-3">
+                Indicadores complementares
+            </h2>
+
+            <div class="d-flex justify-content-between border-bottom py-3">
+
+                <span class="text-muted">
+                    Preço médio por litro
+                </span>
+
+                <strong>
+                    R$
+                    {{ "%.3f"|format(preco_medio_litro)|replace(".", ",") }}
+                </strong>
+
+            </div>
+
+            <div class="d-flex justify-content-between border-bottom py-3">
+
+                <span class="text-muted">
+                    Quilometragem
+                </span>
+
+                <strong>
+                    {{ "{:,}".format(total_km)|replace(",", ".") }} km
+                </strong>
+
+            </div>
+
+            <div class="d-flex justify-content-between border-bottom py-3">
+
+                <span class="text-muted">
+                    Volume abastecido
+                </span>
+
+                <strong>
+                    {{ "%.3f"|format(total_litros)|replace(".", ",") }} L
+                </strong>
+
+            </div>
+
+            <div class="d-flex justify-content-between py-3">
+
+                <span class="text-muted">
+                    Registros analisados
+                </span>
+
+                <strong>
+                    {{
+                        total_abastecimentos
+                        + total_manutencoes
+                        + total_diarios
+                    }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-xl-7">
+
+        <div class="section-card">
+
+            <h2 class="fs-5 fw-bold mb-3">
+                Evolução mensal dos custos
+            </h2>
+
+            <div style="height: 320px;">
+                <canvas id="graficoCustosMensais"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-12 col-xl-5">
+
+        <div class="section-card">
+
+            <h2 class="fs-5 fw-bold mb-3">
+                Veículos com maior custo
+            </h2>
+
+            <div style="height: 320px;">
+                <canvas id="graficoRankingVeiculos"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="section-card mb-3">
+
+    <div class="mb-3">
+
+        <h2 class="fs-5 fw-bold mb-1">
+            Resumo por veículo
+        </h2>
+
+        <p class="text-muted mb-0">
+            Custos e utilização consolidada no período
+        </p>
+
+    </div>
+
+    {% if resumo_veiculos %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Veículo</th>
+                        <th>Quilometragem</th>
+                        <th>Litros</th>
+                        <th>Combustível</th>
+                        <th>Manutenção</th>
+                        <th>Custo total</th>
+                        <th>Custo/KM</th>
+                        <th>Registros</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in resumo_veiculos %}
+
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ item.codigo }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    {{ item.nome }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {{ "{:,}".format(item.km)|replace(",", ".") }} km
+                            </td>
+
+                            <td>
+                                {{ "%.3f"|format(item.litros)|replace(".", ",") }} L
+                            </td>
+
+                            <td>
+                                {{ dinheiro(item.combustivel) }}
+                            </td>
+
+                            <td>
+                                {{ dinheiro(item.manutencao) }}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ dinheiro(item.total) }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ dinheiro(item.custo_km) }}
+                            </td>
+
+                            <td>
+                                <div class="small">
+                                    {{ item.diarios }} diário(s)
+                                </div>
+
+                                <div class="small text-muted">
+                                    {{ item.abastecimentos }} abastecimento(s)
+                                    ·
+                                    {{ item.manutencoes }} manutenção(ões)
+                                </div>
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5 text-muted">
+            Nenhum dado encontrado no período.
+        </div>
+
+    {% endif %}
+
+</div>
+
+<div class="section-card">
+
+    <div class="mb-3">
+
+        <h2 class="fs-5 fw-bold mb-1">
+            Resumo por obra
+        </h2>
+
+        <p class="text-muted mb-0">
+            Custos e quilometragem por centro de custo
+        </p>
+
+    </div>
+
+    {% if resumo_obras %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Obra</th>
+                        <th>Quilometragem</th>
+                        <th>Litros</th>
+                        <th>Combustível</th>
+                        <th>Manutenção</th>
+                        <th>Custo total</th>
+                        <th>Custo/KM</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for item in resumo_obras %}
+
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ item.codigo }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    {{ item.nome }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {{ "{:,}".format(item.km)|replace(",", ".") }} km
+                            </td>
+
+                            <td>
+                                {{ "%.3f"|format(item.litros)|replace(".", ",") }} L
+                            </td>
+
+                            <td>
+                                {{ dinheiro(item.combustivel) }}
+                            </td>
+
+                            <td>
+                                {{ dinheiro(item.manutencao) }}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ dinheiro(item.total) }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ dinheiro(item.custo_km) }}
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5 text-muted">
+            Nenhum custo ou deslocamento vinculado a obras.
+        </div>
+
+    {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const meses = {{ grafico_meses|tojson }};
+    const custosCombustivel = {{ grafico_combustivel|tojson }};
+    const custosManutencao = {{ grafico_manutencao|tojson }};
+    const rankingLabels = {{ grafico_veiculos_labels|tojson }};
+    const rankingValores = {{ grafico_veiculos_valores|tojson }};
+
+    const formatadorDinheiro = new Intl.NumberFormat(
+        "pt-BR",
+        {
+            style: "currency",
+            currency: "BRL"
+        }
+    );
+
+    const elementoCustos = document.getElementById(
+        "graficoCustosMensais"
+    );
+
+    if (elementoCustos) {
+        new Chart(
+            elementoCustos,
+            {
+                type: "bar",
+
+                data: {
+                    labels: meses,
+
+                    datasets: [
+                        {
+                            label: "Combustível",
+                            data: custosCombustivel,
+                            backgroundColor: "rgba(37, 99, 235, 0.75)",
+                            borderColor: "rgb(37, 99, 235)",
+                            borderWidth: 1
+                        },
+                        {
+                            label: "Manutenção",
+                            data: custosManutencao,
+                            backgroundColor: "rgba(245, 158, 11, 0.75)",
+                            borderColor: "rgb(245, 158, 11)",
+                            borderWidth: 1
+                        }
+                    ]
+                },
+
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    interaction: {
+                        mode: "index",
+                        intersect: false
+                    },
+
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+
+                            ticks: {
+                                callback: function (valor) {
+                                    return formatadorDinheiro.format(valor);
+                                }
+                            }
+                        }
+                    },
+
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (contexto) {
+                                    return (
+                                        contexto.dataset.label
+                                        + ": "
+                                        + formatadorDinheiro.format(
+                                            contexto.raw
+                                        )
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+    const elementoRanking = document.getElementById(
+        "graficoRankingVeiculos"
+    );
+
+    if (elementoRanking) {
+        new Chart(
+            elementoRanking,
+            {
+                type: "bar",
+
+                data: {
+                    labels: rankingLabels,
+
+                    datasets: [
+                        {
+                            label: "Custo total",
+                            data: rankingValores,
+                            backgroundColor: "rgba(15, 23, 42, 0.78)",
+                            borderColor: "rgb(15, 23, 42)",
+                            borderWidth: 1
+                        }
+                    ]
+                },
+
+                options: {
+                    indexAxis: "y",
+                    responsive: true,
+                    maintainAspectRatio: false,
+
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+
+                            ticks: {
+                                callback: function (valor) {
+                                    return formatadorDinheiro.format(valor);
+                                }
+                            }
+                        }
+                    },
+
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+
+                        tooltip: {
+                            callbacks: {
+                                label: function (contexto) {
+                                    return formatadorDinheiro.format(
+                                        contexto.raw
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+});
+</script>
+
 {% endblock %}

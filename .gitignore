@@ -4,4 +4,9 @@ __pycache__/
 database.db
 instance/
 .env
-.DS_Store
+.DS_Storedatabase/*.db
+database/*backup*.db
+static/uploads/
+.env
+*.py[cod]
+database/*.db

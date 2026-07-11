@@ -1,6 +1,11 @@
 {% extends "layout/base.html" %}
 
-{% macro campos_manutencao(prefixo, manutencao, veiculos, obras, tipos, status_permitidos, hoje) %}
+{% macro campos_manutencao(manutencao, veiculos, obras, tipos, status_permitidos, hoje) %}
+
+<div
+    class="alert alert-warning d-none alerta-validacao-manutencao"
+    role="alert"
+></div>
 
 <div class="row">
 
@@ -13,6 +18,7 @@
         <select
             name="veiculo_id"
             class="form-select campo-veiculo"
+            data-label="Veículo"
             required
         >
             <option value="">
@@ -44,6 +50,7 @@
         <select
             name="tipo"
             class="form-select"
+            data-label="Tipo da manutenção"
             required
         >
             <option value="">
@@ -72,7 +79,8 @@
 
         <select
             name="status"
-            class="form-select"
+            class="form-select campo-status"
+            data-label="Status"
             required
         >
             {% for status in status_permitidos %}
@@ -103,6 +111,7 @@
         type="text"
         name="descricao"
         class="form-control"
+        data-label="Descrição do serviço"
         maxlength="300"
         value="{{ manutencao.descricao if manutencao else '' }}"
         placeholder="Ex.: Troca de óleo, filtros e revisão do sistema de freios"
@@ -122,7 +131,8 @@
         <input
             type="date"
             name="data_entrada"
-            class="form-control"
+            class="form-control campo-data-entrada"
+            data-label="Data de entrada"
             value="{% if manutencao %}{{ manutencao.data_entrada.strftime('%Y-%m-%d') }}{% else %}{{ hoje }}{% endif %}"
             required
         >
@@ -138,7 +148,8 @@
         <input
             type="date"
             name="data_saida"
-            class="form-control"
+            class="form-control campo-data-saida"
+            data-label="Data de saída"
             value="{% if manutencao and manutencao.data_saida %}{{ manutencao.data_saida.strftime('%Y-%m-%d') }}{% endif %}"
         >
 
@@ -154,6 +165,7 @@
             type="number"
             name="km"
             class="form-control campo-km"
+            data-label="Quilometragem"
             min="0"
             value="{{ manutencao.km if manutencao else '' }}"
             required
@@ -176,7 +188,7 @@
             name="fornecedor"
             class="form-control"
             maxlength="150"
-            value="{{ manutencao.fornecedor or '' if manutencao else '' }}"
+            value="{% if manutencao and manutencao.fornecedor %}{{ manutencao.fornecedor }}{% endif %}"
         >
 
     </div>
@@ -219,15 +231,24 @@
             Valor das peças
         </label>
 
-        <input
-            type="number"
-            name="valor_pecas"
-            class="form-control campo-valor-pecas"
-            min="0"
-            step="0.01"
-            value="{{ manutencao.valor_pecas if manutencao else '0.00' }}"
-            required
-        >
+        <div class="input-group">
+
+            <span class="input-group-text">
+                R$
+            </span>
+
+            <input
+                type="text"
+                name="valor_pecas"
+                class="form-control campo-valor-pecas campo-moeda"
+                data-label="Valor das peças"
+                inputmode="decimal"
+                autocomplete="off"
+                value="{% if manutencao %}{{ '%.2f'|format(manutencao.valor_pecas)|replace('.', ',') }}{% else %}0,00{% endif %}"
+                required
+            >
+
+        </div>
 
     </div>
 
@@ -237,15 +258,24 @@
             Mão de obra
         </label>
 
-        <input
-            type="number"
-            name="valor_mao_obra"
-            class="form-control campo-valor-mao-obra"
-            min="0"
-            step="0.01"
-            value="{{ manutencao.valor_mao_obra if manutencao else '0.00' }}"
-            required
-        >
+        <div class="input-group">
+
+            <span class="input-group-text">
+                R$
+            </span>
+
+            <input
+                type="text"
+                name="valor_mao_obra"
+                class="form-control campo-valor-mao-obra campo-moeda"
+                data-label="Valor da mão de obra"
+                inputmode="decimal"
+                autocomplete="off"
+                value="{% if manutencao %}{{ '%.2f'|format(manutencao.valor_mao_obra)|replace('.', ',') }}{% else %}0,00{% endif %}"
+                required
+            >
+
+        </div>
 
     </div>
 
@@ -255,11 +285,20 @@
             Valor total
         </label>
 
-        <input
-            type="text"
-            class="form-control campo-valor-total"
-            readonly
-        >
+        <div class="input-group">
+
+            <span class="input-group-text">
+                R$
+            </span>
+
+            <input
+                type="text"
+                class="form-control campo-valor-total"
+                value="0,00"
+                readonly
+            >
+
+        </div>
 
     </div>
 
@@ -291,7 +330,7 @@
         <input
             type="number"
             name="proxima_manutencao_km"
-            class="form-control"
+            class="form-control campo-proxima-km"
             min="0"
             value="{% if manutencao and manutencao.proxima_manutencao_km is not none %}{{ manutencao.proxima_manutencao_km }}{% endif %}"
         >
@@ -309,7 +348,7 @@
             name="numero_nota"
             class="form-control"
             maxlength="80"
-            value="{{ manutencao.numero_nota or '' if manutencao else '' }}"
+            value="{% if manutencao and manutencao.numero_nota %}{{ manutencao.numero_nota }}{% endif %}"
         >
 
     </div>
@@ -331,6 +370,7 @@
 
     <div class="form-text">
         JPG, PNG, WEBP ou PDF, até 8 MB.
+
         {% if manutencao and manutencao.comprovante %}
             Deixe vazio para manter o arquivo atual.
         {% endif %}
@@ -349,11 +389,12 @@
         class="form-control"
         rows="3"
         maxlength="2000"
-    >{{ manutencao.observacoes or '' if manutencao else '' }}</textarea>
+    >{% if manutencao and manutencao.observacoes %}{{ manutencao.observacoes }}{% endif %}</textarea>
 
 </div>
 
 {% endmacro %}
+
 
 {% block titulo %}
 
@@ -382,6 +423,7 @@
 </div>
 
 {% endblock %}
+
 
 {% block conteudo %}
 
@@ -736,7 +778,13 @@
 
                                 <div class="small text-muted">
                                     Peças:
-                                    R$ {{ "%.2f"|format(manutencao.valor_pecas)|replace(".", ",") }}
+                                    R$
+                                    {{
+                                        "{:,.2f}".format(manutencao.valor_pecas)
+                                        .replace(",", "X")
+                                        .replace(".", ",")
+                                        .replace("X", ".")
+                                    }}
                                 </div>
                             </td>
 
@@ -874,6 +922,7 @@
                 action="{{ url_for('manutencoes.nova_manutencao') }}"
                 enctype="multipart/form-data"
                 class="form-manutencao"
+                novalidate
             >
 
                 <div class="modal-header">
@@ -895,7 +944,6 @@
 
                     {{
                         campos_manutencao(
-                            "novo",
                             none,
                             veiculos,
                             obras,
@@ -954,6 +1002,7 @@
                 ) }}"
                 enctype="multipart/form-data"
                 class="form-manutencao"
+                novalidate
             >
 
                 <div class="modal-header">
@@ -975,7 +1024,6 @@
 
                     {{
                         campos_manutencao(
-                            "editar" ~ manutencao.id,
                             manutencao,
                             veiculos,
                             obras,
@@ -1020,7 +1068,10 @@
 document.addEventListener("DOMContentLoaded", function () {
 
     function converterNumero(valor) {
-        const texto = String(valor || "").trim();
+        const texto = String(valor || "")
+            .trim()
+            .replace("R$", "")
+            .replace(/\s/g, "");
 
         if (!texto) {
             return 0;
@@ -1037,16 +1088,130 @@ document.addEventListener("DOMContentLoaded", function () {
         return Number(texto) || 0;
     }
 
-    function formatarDinheiro(valor) {
-        return valor.toLocaleString(
+    function formatarNumeroMoeda(valor) {
+        return Number(valor || 0).toLocaleString(
             "pt-BR",
             {
-                style: "currency",
-                currency: "BRL",
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }
         );
+    }
+
+    function limparCampoMoeda(campo) {
+        const valor = converterNumero(
+            campo.value
+        );
+
+        campo.value = valor
+            .toFixed(2)
+            .replace(".", ",");
+    }
+
+    function formatarCampoMoeda(campo) {
+        const valor = converterNumero(
+            campo.value
+        );
+
+        campo.value = formatarNumeroMoeda(
+            valor
+        );
+    }
+
+    function sanitizarCampoMoeda(campo) {
+        let valor = campo.value.replace(
+            /[^0-9.,]/g,
+            ""
+        );
+
+        const ultimaVirgula = valor.lastIndexOf(",");
+        const ultimoPonto = valor.lastIndexOf(".");
+
+        const separadorDecimal = Math.max(
+            ultimaVirgula,
+            ultimoPonto
+        );
+
+        if (separadorDecimal >= 0) {
+            const inteira = valor
+                .slice(0, separadorDecimal)
+                .replace(/\D/g, "");
+
+            const decimal = valor
+                .slice(separadorDecimal + 1)
+                .replace(/\D/g, "")
+                .slice(0, 2);
+
+            valor = inteira + "," + decimal;
+        } else {
+            valor = valor.replace(/\D/g, "");
+        }
+
+        campo.value = valor;
+    }
+
+    function removerErros(formulario) {
+        formulario
+            .querySelectorAll(".is-invalid")
+            .forEach(function (campo) {
+                campo.classList.remove(
+                    "is-invalid"
+                );
+            });
+
+        const alerta = formulario.querySelector(
+            ".alerta-validacao-manutencao"
+        );
+
+        if (alerta) {
+            alerta.classList.add("d-none");
+            alerta.innerHTML = "";
+        }
+    }
+
+    function mostrarErros(
+        formulario,
+        erros,
+        primeiroCampo
+    ) {
+        const alerta = formulario.querySelector(
+            ".alerta-validacao-manutencao"
+        );
+
+        if (alerta) {
+            const itens = erros
+                .map(function (erro) {
+                    return "<li>" + erro + "</li>";
+                })
+                .join("");
+
+            alerta.innerHTML = `
+                <div class="d-flex gap-2">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+
+                    <div>
+                        <strong>
+                            Verifique as informações:
+                        </strong>
+
+                        <ul class="mb-0 mt-1">
+                            ${itens}
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            alerta.classList.remove("d-none");
+
+            alerta.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest"
+            });
+        }
+
+        if (primeiroCampo) {
+            primeiroCampo.focus();
+        }
     }
 
     document
@@ -1077,6 +1242,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 ".campo-valor-total"
             );
 
+            const campoStatus = formulario.querySelector(
+                ".campo-status"
+            );
+
+            const campoDataEntrada = formulario.querySelector(
+                ".campo-data-entrada"
+            );
+
+            const campoDataSaida = formulario.querySelector(
+                ".campo-data-saida"
+            );
+
+            const campoProximaKm = formulario.querySelector(
+                ".campo-proxima-km"
+            );
+
             function calcularTotal() {
                 const valorPecas = converterNumero(
                     campoPecas
@@ -1091,12 +1272,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
                 const total = (
-                    valorPecas + valorMaoObra
+                    valorPecas
+                    + valorMaoObra
                 );
 
                 if (campoTotal) {
-                    campoTotal.value = formatarDinheiro(
-                        total
+                    campoTotal.value = (
+                        formatarNumeroMoeda(total)
                     );
                 }
             }
@@ -1133,26 +1315,209 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
 
+            function validarFormulario() {
+                removerErros(formulario);
+
+                const erros = [];
+                let primeiroCampo = null;
+
+                formulario
+                    .querySelectorAll("[required]")
+                    .forEach(function (campo) {
+                        const valor = String(
+                            campo.value || ""
+                        ).trim();
+
+                        if (!valor) {
+                            const nomeCampo = (
+                                campo.dataset.label
+                                || "Campo obrigatório"
+                            );
+
+                            erros.push(
+                                nomeCampo
+                                + " precisa ser preenchido."
+                            );
+
+                            campo.classList.add(
+                                "is-invalid"
+                            );
+
+                            if (!primeiroCampo) {
+                                primeiroCampo = campo;
+                            }
+                        }
+                    });
+
+                if (
+                    campoStatus
+                    && campoStatus.value === "Concluída"
+                    && campoDataSaida
+                    && !campoDataSaida.value
+                ) {
+                    erros.push(
+                        "A data de saída é obrigatória para concluir a manutenção."
+                    );
+
+                    campoDataSaida.classList.add(
+                        "is-invalid"
+                    );
+
+                    if (!primeiroCampo) {
+                        primeiroCampo = campoDataSaida;
+                    }
+                }
+
+                if (
+                    campoDataEntrada
+                    && campoDataSaida
+                    && campoDataEntrada.value
+                    && campoDataSaida.value
+                    && campoDataSaida.value
+                        < campoDataEntrada.value
+                ) {
+                    erros.push(
+                        "A data de saída não pode ser anterior à data de entrada."
+                    );
+
+                    campoDataSaida.classList.add(
+                        "is-invalid"
+                    );
+
+                    if (!primeiroCampo) {
+                        primeiroCampo = campoDataSaida;
+                    }
+                }
+
+                const kmAtual = Number(
+                    campoKm
+                        ? campoKm.value
+                        : 0
+                );
+
+                const proximaKm = Number(
+                    campoProximaKm
+                        ? campoProximaKm.value
+                        : 0
+                );
+
+                if (
+                    campoProximaKm
+                    && campoProximaKm.value
+                    && proximaKm <= kmAtual
+                ) {
+                    erros.push(
+                        "A próxima manutenção em KM precisa ser maior que a quilometragem atual."
+                    );
+
+                    campoProximaKm.classList.add(
+                        "is-invalid"
+                    );
+
+                    if (!primeiroCampo) {
+                        primeiroCampo = campoProximaKm;
+                    }
+                }
+
+                if (erros.length > 0) {
+                    mostrarErros(
+                        formulario,
+                        erros,
+                        primeiroCampo
+                    );
+
+                    return false;
+                }
+
+                return true;
+            }
+
             if (campoVeiculo) {
                 campoVeiculo.addEventListener(
                     "change",
-                    preencherDadosVeiculo
+                    function () {
+                        preencherDadosVeiculo();
+                        removerErros(formulario);
+                    }
                 );
             }
 
-            if (campoPecas) {
-                campoPecas.addEventListener(
-                    "input",
-                    calcularTotal
-                );
-            }
+            formulario
+                .querySelectorAll(
+                    "input, select, textarea"
+                )
+                .forEach(function (campo) {
+                    campo.addEventListener(
+                        "input",
+                        function () {
+                            campo.classList.remove(
+                                "is-invalid"
+                            );
+                        }
+                    );
 
-            if (campoMaoObra) {
-                campoMaoObra.addEventListener(
-                    "input",
-                    calcularTotal
-                );
-            }
+                    campo.addEventListener(
+                        "change",
+                        function () {
+                            campo.classList.remove(
+                                "is-invalid"
+                            );
+                        }
+                    );
+                });
+
+            formulario
+                .querySelectorAll(".campo-moeda")
+                .forEach(function (campo) {
+
+                    campo.addEventListener(
+                        "focus",
+                        function () {
+                            limparCampoMoeda(campo);
+                            campo.select();
+                        }
+                    );
+
+                    campo.addEventListener(
+                        "input",
+                        function () {
+                            sanitizarCampoMoeda(campo);
+                            calcularTotal();
+                        }
+                    );
+
+                    campo.addEventListener(
+                        "blur",
+                        function () {
+                            formatarCampoMoeda(campo);
+                            calcularTotal();
+                        }
+                    );
+
+                    formatarCampoMoeda(campo);
+                });
+
+            formulario.addEventListener(
+                "submit",
+                function (event) {
+                    if (!validarFormulario()) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    if (campoPecas) {
+                        formatarCampoMoeda(
+                            campoPecas
+                        );
+                    }
+
+                    if (campoMaoObra) {
+                        formatarCampoMoeda(
+                            campoMaoObra
+                        );
+                    }
+                }
+            );
 
             calcularTotal();
 
