@@ -1,0 +1,1164 @@
+{% extends "layout/base.html" %}
+
+{% macro campos_manutencao(prefixo, manutencao, veiculos, obras, tipos, status_permitidos, hoje) %}
+
+<div class="row">
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Veículo
+        </label>
+
+        <select
+            name="veiculo_id"
+            class="form-select campo-veiculo"
+            required
+        >
+            <option value="">
+                Selecione
+            </option>
+
+            {% for veiculo in veiculos %}
+                <option
+                    value="{{ veiculo.id }}"
+                    data-km="{{ veiculo.km_atual }}"
+                    data-obra-id="{{ veiculo.obra_id or '' }}"
+                    {% if manutencao and manutencao.veiculo_id == veiculo.id %}
+                        selected
+                    {% endif %}
+                >
+                    {{ veiculo.placa }} — {{ veiculo.modelo }}
+                </option>
+            {% endfor %}
+        </select>
+
+    </div>
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Tipo
+        </label>
+
+        <select
+            name="tipo"
+            class="form-select"
+            required
+        >
+            <option value="">
+                Selecione
+            </option>
+
+            {% for tipo in tipos %}
+                <option
+                    value="{{ tipo }}"
+                    {% if manutencao and manutencao.tipo == tipo %}
+                        selected
+                    {% endif %}
+                >
+                    {{ tipo }}
+                </option>
+            {% endfor %}
+        </select>
+
+    </div>
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Status
+        </label>
+
+        <select
+            name="status"
+            class="form-select"
+            required
+        >
+            {% for status in status_permitidos %}
+                <option
+                    value="{{ status }}"
+                    {% if manutencao and manutencao.status == status %}
+                        selected
+                    {% elif not manutencao and status == "Agendada" %}
+                        selected
+                    {% endif %}
+                >
+                    {{ status }}
+                </option>
+            {% endfor %}
+        </select>
+
+    </div>
+
+</div>
+
+<div class="mb-3">
+
+    <label class="form-label">
+        Descrição do serviço
+    </label>
+
+    <input
+        type="text"
+        name="descricao"
+        class="form-control"
+        maxlength="300"
+        value="{{ manutencao.descricao if manutencao else '' }}"
+        placeholder="Ex.: Troca de óleo, filtros e revisão do sistema de freios"
+        required
+    >
+
+</div>
+
+<div class="row">
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Data de entrada
+        </label>
+
+        <input
+            type="date"
+            name="data_entrada"
+            class="form-control"
+            value="{% if manutencao %}{{ manutencao.data_entrada.strftime('%Y-%m-%d') }}{% else %}{{ hoje }}{% endif %}"
+            required
+        >
+
+    </div>
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Data de saída
+        </label>
+
+        <input
+            type="date"
+            name="data_saida"
+            class="form-control"
+            value="{% if manutencao and manutencao.data_saida %}{{ manutencao.data_saida.strftime('%Y-%m-%d') }}{% endif %}"
+        >
+
+    </div>
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Quilometragem
+        </label>
+
+        <input
+            type="number"
+            name="km"
+            class="form-control campo-km"
+            min="0"
+            value="{{ manutencao.km if manutencao else '' }}"
+            required
+        >
+
+    </div>
+
+</div>
+
+<div class="row">
+
+    <div class="col-md-6 mb-3">
+
+        <label class="form-label">
+            Oficina ou fornecedor
+        </label>
+
+        <input
+            type="text"
+            name="fornecedor"
+            class="form-control"
+            maxlength="150"
+            value="{{ manutencao.fornecedor or '' if manutencao else '' }}"
+        >
+
+    </div>
+
+    <div class="col-md-6 mb-3">
+
+        <label class="form-label">
+            Obra ou centro de custo
+        </label>
+
+        <select
+            name="obra_id"
+            class="form-select campo-obra"
+        >
+            <option value="">
+                Sem obra vinculada
+            </option>
+
+            {% for obra in obras %}
+                <option
+                    value="{{ obra.id }}"
+                    {% if manutencao and manutencao.obra_id == obra.id %}
+                        selected
+                    {% endif %}
+                >
+                    {{ obra.codigo }} — {{ obra.nome }}
+                </option>
+            {% endfor %}
+        </select>
+
+    </div>
+
+</div>
+
+<div class="row">
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Valor das peças
+        </label>
+
+        <input
+            type="number"
+            name="valor_pecas"
+            class="form-control campo-valor-pecas"
+            min="0"
+            step="0.01"
+            value="{{ manutencao.valor_pecas if manutencao else '0.00' }}"
+            required
+        >
+
+    </div>
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Mão de obra
+        </label>
+
+        <input
+            type="number"
+            name="valor_mao_obra"
+            class="form-control campo-valor-mao-obra"
+            min="0"
+            step="0.01"
+            value="{{ manutencao.valor_mao_obra if manutencao else '0.00' }}"
+            required
+        >
+
+    </div>
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Valor total
+        </label>
+
+        <input
+            type="text"
+            class="form-control campo-valor-total"
+            readonly
+        >
+
+    </div>
+
+</div>
+
+<div class="row">
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Próxima manutenção
+        </label>
+
+        <input
+            type="date"
+            name="proxima_manutencao_data"
+            class="form-control"
+            value="{% if manutencao and manutencao.proxima_manutencao_data %}{{ manutencao.proxima_manutencao_data.strftime('%Y-%m-%d') }}{% endif %}"
+        >
+
+    </div>
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Próxima manutenção em KM
+        </label>
+
+        <input
+            type="number"
+            name="proxima_manutencao_km"
+            class="form-control"
+            min="0"
+            value="{% if manutencao and manutencao.proxima_manutencao_km is not none %}{{ manutencao.proxima_manutencao_km }}{% endif %}"
+        >
+
+    </div>
+
+    <div class="col-md-4 mb-3">
+
+        <label class="form-label">
+            Número da nota
+        </label>
+
+        <input
+            type="text"
+            name="numero_nota"
+            class="form-control"
+            maxlength="80"
+            value="{{ manutencao.numero_nota or '' if manutencao else '' }}"
+        >
+
+    </div>
+
+</div>
+
+<div class="mb-3">
+
+    <label class="form-label">
+        Comprovante ou nota fiscal
+    </label>
+
+    <input
+        type="file"
+        name="comprovante"
+        class="form-control"
+        accept=".jpg,.jpeg,.png,.webp,.pdf"
+    >
+
+    <div class="form-text">
+        JPG, PNG, WEBP ou PDF, até 8 MB.
+        {% if manutencao and manutencao.comprovante %}
+            Deixe vazio para manter o arquivo atual.
+        {% endif %}
+    </div>
+
+</div>
+
+<div class="mb-3">
+
+    <label class="form-label">
+        Observações
+    </label>
+
+    <textarea
+        name="observacoes"
+        class="form-control"
+        rows="3"
+        maxlength="2000"
+    >{{ manutencao.observacoes or '' if manutencao else '' }}</textarea>
+
+</div>
+
+{% endmacro %}
+
+{% block titulo %}
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Manutenções
+        </h1>
+
+        <p class="text-muted mb-0">
+            Controle de revisões, oficinas, peças e custos
+        </p>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovaManutencao"
+    >
+        <i class="bi bi-plus-lg me-1"></i>
+        Nova manutenção
+    </button>
+
+</div>
+
+{% endblock %}
+
+{% block conteudo %}
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-tools icon-blue"></i>
+                Total
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_manutencoes }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Manutenções cadastradas
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-hourglass-split text-warning"></i>
+                Em andamento
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_em_andamento }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Veículos em manutenção
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-check-circle text-success"></i>
+                Concluídas
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_concluidas }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Serviços finalizados
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-cash-stack text-primary"></i>
+                Custo
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                R$
+                {{
+                    "{:,.2f}".format(total_custo)
+                    .replace(",", "X")
+                    .replace(".", ",")
+                    .replace("X", ".")
+                }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Total do período filtrado
+            </p>
+
+        </div>
+    </div>
+
+</div>
+
+<div class="section-card mb-3">
+
+    <form
+        method="GET"
+        action="{{ url_for('manutencoes.listar_manutencoes') }}"
+    >
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-12 col-md-3">
+
+                <label class="form-label">
+                    Veículo
+                </label>
+
+                <select
+                    name="veiculo_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos os veículos
+                    </option>
+
+                    {% for veiculo in veiculos %}
+                        <option
+                            value="{{ veiculo.id }}"
+                            {% if veiculo_filtro == veiculo.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ veiculo.placa }} — {{ veiculo.modelo }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-2">
+
+                <label class="form-label">
+                    Tipo
+                </label>
+
+                <select
+                    name="tipo"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos
+                    </option>
+
+                    {% for tipo in tipos %}
+                        <option
+                            value="{{ tipo }}"
+                            {% if tipo_filtro == tipo %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ tipo }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-2">
+
+                <label class="form-label">
+                    Status
+                </label>
+
+                <select
+                    name="status"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos
+                    </option>
+
+                    {% for status in status_permitidos %}
+                        <option
+                            value="{{ status }}"
+                            {% if status_filtro == status %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ status }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-2">
+
+                <label class="form-label">
+                    Obra
+                </label>
+
+                <select
+                    name="obra_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todas
+                    </option>
+
+                    {% for obra in obras %}
+                        <option
+                            value="{{ obra.id }}"
+                            {% if obra_filtro == obra.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ obra.codigo }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-6 col-md-1">
+
+                <label class="form-label">
+                    Início
+                </label>
+
+                <input
+                    type="date"
+                    name="data_inicio"
+                    class="form-control"
+                    value="{{ data_inicio_filtro }}"
+                >
+
+            </div>
+
+            <div class="col-6 col-md-2">
+
+                <label class="form-label">
+                    Final
+                </label>
+
+                <input
+                    type="date"
+                    name="data_fim"
+                    class="form-control"
+                    value="{{ data_fim_filtro }}"
+                >
+
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    <i class="bi bi-funnel me-1"></i>
+                    Filtrar
+                </button>
+
+                <a
+                    href="{{ url_for('manutencoes.listar_manutencoes') }}"
+                    class="btn btn-outline-secondary"
+                >
+                    Limpar
+                </a>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+<div class="section-card">
+
+    {% if manutencoes %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Entrada</th>
+                        <th>Veículo</th>
+                        <th>Serviço</th>
+                        <th>Oficina</th>
+                        <th>KM</th>
+                        <th>Custo</th>
+                        <th>Próxima</th>
+                        <th>Status</th>
+                        <th>Arquivo</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for manutencao in manutencoes %}
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ manutencao.data_entrada.strftime("%d/%m/%Y") }}
+                                </strong>
+
+                                {% if manutencao.data_saida %}
+                                    <div class="small text-muted">
+                                        Saída:
+                                        {{ manutencao.data_saida.strftime("%d/%m/%Y") }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ manutencao.veiculo.placa }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    {{ manutencao.veiculo.modelo }}
+                                </div>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ manutencao.tipo }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    {{ manutencao.descricao }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {{ manutencao.fornecedor or "—" }}
+
+                                {% if manutencao.numero_nota %}
+                                    <div class="small text-muted">
+                                        Nota:
+                                        {{ manutencao.numero_nota }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ manutencao.km }} km
+                            </td>
+
+                            <td>
+                                <strong>
+                                    R$
+                                    {{
+                                        "{:,.2f}".format(manutencao.valor_total)
+                                        .replace(",", "X")
+                                        .replace(".", ",")
+                                        .replace("X", ".")
+                                    }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    Peças:
+                                    R$ {{ "%.2f"|format(manutencao.valor_pecas)|replace(".", ",") }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {% if manutencao.proxima_manutencao_data %}
+                                    <div>
+                                        {{ manutencao.proxima_manutencao_data.strftime("%d/%m/%Y") }}
+                                    </div>
+                                {% endif %}
+
+                                {% if manutencao.proxima_manutencao_km %}
+                                    <div class="small text-muted">
+                                        {{ manutencao.proxima_manutencao_km }} km
+                                    </div>
+                                {% endif %}
+
+                                {% if not manutencao.proxima_manutencao_data and not manutencao.proxima_manutencao_km %}
+                                    <span class="text-muted">
+                                        Não definida
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if manutencao.status == "Concluída" %}
+
+                                    <span class="badge text-bg-success">
+                                        Concluída
+                                    </span>
+
+                                {% elif manutencao.status == "Em andamento" %}
+
+                                    <span class="badge text-bg-primary">
+                                        Em andamento
+                                    </span>
+
+                                {% elif manutencao.status == "Aguardando peça" %}
+
+                                    <span class="badge text-bg-warning">
+                                        Aguardando peça
+                                    </span>
+
+                                {% elif manutencao.status == "Agendada" %}
+
+                                    <span class="badge text-bg-secondary">
+                                        Agendada
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge text-bg-danger">
+                                        Cancelada
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if manutencao.comprovante %}
+
+                                    <a
+                                        href="{{ url_for('static', filename=manutencao.comprovante) }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="btn btn-sm btn-outline-secondary"
+                                    >
+                                        <i class="bi bi-paperclip"></i>
+                                        Abrir
+                                    </a>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Não enviado
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditarManutencao{{ manutencao.id }}"
+                                >
+                                    <i class="bi bi-pencil"></i>
+                                    Editar
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-tools fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhuma manutenção encontrada
+            </h3>
+
+            <p class="text-muted mb-0">
+                Registre a primeira manutenção da frota.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+<div
+    class="modal fade"
+    id="modalNovaManutencao"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('manutencoes.nova_manutencao') }}"
+                enctype="multipart/form-data"
+                class="form-manutencao"
+            >
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        Nova manutenção
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    {{
+                        campos_manutencao(
+                            "novo",
+                            none,
+                            veiculos,
+                            obras,
+                            tipos,
+                            status_permitidos,
+                            hoje
+                        )
+                    }}
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar manutenção
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% for manutencao in manutencoes %}
+
+<div
+    class="modal fade"
+    id="modalEditarManutencao{{ manutencao.id }}"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'manutencoes.editar_manutencao',
+                    manutencao_id=manutencao.id
+                ) }}"
+                enctype="multipart/form-data"
+                class="form-manutencao"
+            >
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        Editar manutenção
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    {{
+                        campos_manutencao(
+                            "editar" ~ manutencao.id,
+                            manutencao,
+                            veiculos,
+                            obras,
+                            tipos,
+                            status_permitidos,
+                            hoje
+                        )
+                    }}
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar alterações
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% endfor %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    function converterNumero(valor) {
+        const texto = String(valor || "").trim();
+
+        if (!texto) {
+            return 0;
+        }
+
+        if (texto.includes(",")) {
+            return Number(
+                texto
+                    .replace(/\./g, "")
+                    .replace(",", ".")
+            ) || 0;
+        }
+
+        return Number(texto) || 0;
+    }
+
+    function formatarDinheiro(valor) {
+        return valor.toLocaleString(
+            "pt-BR",
+            {
+                style: "currency",
+                currency: "BRL",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+    }
+
+    document
+        .querySelectorAll(".form-manutencao")
+        .forEach(function (formulario) {
+
+            const campoVeiculo = formulario.querySelector(
+                ".campo-veiculo"
+            );
+
+            const campoKm = formulario.querySelector(
+                ".campo-km"
+            );
+
+            const campoObra = formulario.querySelector(
+                ".campo-obra"
+            );
+
+            const campoPecas = formulario.querySelector(
+                ".campo-valor-pecas"
+            );
+
+            const campoMaoObra = formulario.querySelector(
+                ".campo-valor-mao-obra"
+            );
+
+            const campoTotal = formulario.querySelector(
+                ".campo-valor-total"
+            );
+
+            function calcularTotal() {
+                const valorPecas = converterNumero(
+                    campoPecas
+                        ? campoPecas.value
+                        : 0
+                );
+
+                const valorMaoObra = converterNumero(
+                    campoMaoObra
+                        ? campoMaoObra.value
+                        : 0
+                );
+
+                const total = (
+                    valorPecas + valorMaoObra
+                );
+
+                if (campoTotal) {
+                    campoTotal.value = formatarDinheiro(
+                        total
+                    );
+                }
+            }
+
+            function preencherDadosVeiculo() {
+                if (!campoVeiculo) {
+                    return;
+                }
+
+                const opcao = campoVeiculo.options[
+                    campoVeiculo.selectedIndex
+                ];
+
+                if (!opcao || !opcao.value) {
+                    return;
+                }
+
+                const km = opcao.dataset.km || "";
+                const obraId = opcao.dataset.obraId || "";
+
+                if (
+                    campoKm
+                    && !campoKm.value
+                ) {
+                    campoKm.value = km;
+                }
+
+                if (
+                    campoObra
+                    && !campoObra.value
+                    && obraId
+                ) {
+                    campoObra.value = obraId;
+                }
+            }
+
+            if (campoVeiculo) {
+                campoVeiculo.addEventListener(
+                    "change",
+                    preencherDadosVeiculo
+                );
+            }
+
+            if (campoPecas) {
+                campoPecas.addEventListener(
+                    "input",
+                    calcularTotal
+                );
+            }
+
+            if (campoMaoObra) {
+                campoMaoObra.addEventListener(
+                    "input",
+                    calcularTotal
+                );
+            }
+
+            calcularTotal();
+
+        });
+
+});
+</script>
+
+{% endblock %}

@@ -1,7 +1,661 @@
+:root{
+    --bg-page: #f3f5f7;
+    --bg-card: #ffffff;
+
+    --text-main: #111827;
+    --text-soft: #6b7280;
+
+    --border-color: #d9dee5;
+
+    --sidebar-bg: #0f172a;
+    --sidebar-bg-secondary: #162033;
+    --sidebar-text: #dbe4f0;
+
+    --header-bg: #ffffff;
+
+    --sidebar-collapsed-width: 64px;
+
+    --shadow-soft: 0 4px 14px rgba(15, 23, 42, 0.05);
+    --shadow-card: 0 3px 10px rgba(15, 23, 42, 0.06);
+}
+
+/* =========================================================
+   ESTRUTURA GERAL
+========================================================= */
+
+*{
+    box-sizing: border-box;
+}
+
+body.app-body{
+    background: var(--bg-page);
+    color: var(--text-main);
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.app-main{
+    background: var(--bg-page);
+}
+
+.page-header{
+    padding-top: 14px;
+    padding-bottom: 6px;
+}
+
+/* =========================================================
+   BARRA SUPERIOR
+========================================================= */
+
+.header-custom{
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 1px 6px rgba(15, 23, 42, 0.04);
+}
+
+.header-title{
+    margin: 0;
+    color: var(--text-main);
+    font-size: 1.45rem;
+    font-weight: 700;
+}
+
+.menu-toggle-btn{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    padding: 0;
+
+    border-radius: 4px;
+
+    color: #374151 !important;
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.menu-toggle-btn i{
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.menu-toggle-btn:hover{
+    background: #eef2f7;
+    color: #1d4ed8 !important;
+}
+
+.header-user{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    color: #374151;
+    font-weight: 500;
+}
+
+.header-user i{
+    color: #475569;
+    font-size: 1.15rem;
+}
+
+/* =========================================================
+   BARRA LATERAL
+========================================================= */
+
+.sidebar-custom{
+    background: linear-gradient(
+        180deg,
+        var(--sidebar-bg) 0%,
+        var(--sidebar-bg-secondary) 100%
+    ) !important;
+
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-custom .sidebar-brand{
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sidebar-custom .sidebar-wrapper{
+    overflow-x: hidden;
+}
+
+.brand-link{
+    display: block;
+    width: 100%;
+
+    text-decoration: none !important;
+}
+
+.brand-box{
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    width: 100%;
+    min-height: 56px;
+
+    padding: 10px 18px;
+
+    color: #ffffff;
+}
+
+.brand-icon{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 20px;
+
+    width: 20px;
+    min-width: 20px;
+
+    margin: 0;
+
+    color: #93c5fd;
+
+    font-size: 1.1rem;
+    line-height: 1;
+    text-align: center;
+}
+
+.brand-text{
+    font-size: 1.15rem;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   ITENS DO MENU ABERTO
+========================================================= */
+
+.sidebar-custom .sidebar-menu{
+    padding-top: 2px;
+}
+
+.sidebar-custom .nav-item{
+    width: 100%;
+}
+
+.sidebar-custom .nav-link{
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    min-height: 42px;
+
+    margin: 3px 10px;
+    padding: 9px 12px;
+
+    border: none;
+    border-radius: 4px;
+
+    overflow: hidden;
+
+    color: var(--sidebar-text) !important;
+
+    font-weight: 500;
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.sidebar-custom .nav-link .nav-icon{
+    position: static;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 20px;
+
+    width: 20px;
+    min-width: 20px;
+
+    margin: 0 10px 0 0 !important;
+
+    font-size: 1rem;
+    line-height: 1;
+    text-align: center;
+}
+
+.sidebar-custom .nav-link p{
+    margin: 0;
+    padding: 0;
+
+    white-space: nowrap;
+}
+
+.sidebar-custom .nav-link:hover{
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff !important;
+}
+
+.sidebar-custom .nav-link.active{
+    background: rgba(29, 78, 216, 0.20);
+    color: #ffffff !important;
+}
+
+.sidebar-custom .nav-link.active::before{
+    content: "";
+
+    position: absolute;
+
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+
+    width: 3px;
+
+    background: #60a5fa;
+}
+
+/* =========================================================
+   SIDEBAR RECOLHIDA
+========================================================= */
+
+@media (min-width: 992px){
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover{
+        width: var(--sidebar-collapsed-width) !important;
+        min-width: var(--sidebar-collapsed-width) !important;
+        max-width: var(--sidebar-collapsed-width) !important;
+
+        overflow-x: hidden !important;
+
+        transition: none !important;
+    }
+
+    /*
+     * Remove os paddings internos do AdminLTE.
+     * Eles eram os responsáveis por empurrar os ícones.
+     */
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .sidebar-brand,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .sidebar-brand{
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+
+        padding: 0 !important;
+
+        overflow: hidden !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .sidebar-wrapper,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .sidebar-wrapper{
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+
+        overflow-x: hidden !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .brand-link,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .brand-link{
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        width: 100% !important;
+        height: 56px !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .brand-box,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .brand-box{
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        gap: 0 !important;
+
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .brand-icon,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .brand-icon{
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        flex: 0 0 20px !important;
+
+        width: 20px !important;
+        min-width: 20px !important;
+        max-width: 20px !important;
+
+        height: 20px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        line-height: 20px !important;
+        text-align: center !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .brand-text,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .brand-text{
+        display: none !important;
+
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .sidebar-menu,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .sidebar-menu{
+        width: 100% !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .nav-item,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .nav-item{
+        display: flex !important;
+        justify-content: center !important;
+
+        width: 100% !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /*
+     * Cada item tem 42 px e fica centralizado
+     * dentro dos 64 px da sidebar.
+     */
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .nav-link,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .nav-link{
+        position: relative !important;
+
+        display: block !important;
+
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+
+        height: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
+
+        margin: 5px auto !important;
+        padding: 0 !important;
+
+        overflow: hidden !important;
+
+        transition:
+            background-color 0.2s ease,
+            color 0.2s ease !important;
+    }
+
+    /*
+     * Posicionamento absoluto garante que todos os ícones
+     * tenham exatamente o mesmo centro.
+     */
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .nav-link .nav-icon,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .nav-link .nav-icon{
+        position: absolute !important;
+
+        top: 50% !important;
+        left: 50% !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        flex: none !important;
+
+        width: 22px !important;
+        min-width: 22px !important;
+        max-width: 22px !important;
+
+        height: 22px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        font-size: 1rem !important;
+        line-height: 22px !important;
+        text-align: center !important;
+
+        transform: translate(-50%, -50%) !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .nav-link .nav-icon::before,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .nav-link .nav-icon::before{
+        display: block !important;
+
+        width: 22px !important;
+        height: 22px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        line-height: 22px !important;
+        text-align: center !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .nav-link p,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .nav-link p{
+        display: none !important;
+
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .nav-link.active,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .nav-link.active{
+        background: rgba(29, 78, 216, 0.24);
+    }
+
+    body.sidebar-mini.sidebar-collapse .app-sidebar .nav-link.active::before,
+    body.sidebar-mini.sidebar-collapse .app-sidebar:hover .nav-link.active::before{
+        top: 7px;
+        bottom: 7px;
+        left: 0;
+    }
+}
+
+/* =========================================================
+   CARDS DO DASHBOARD
+========================================================= */
+
 .card{
-    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+
+    box-shadow: var(--shadow-card);
 }
 
 .small-box{
-    border-radius: 14px;
+    border-radius: 6px;
+}
+
+.dashboard-card{
+    height: 100%;
+
+    padding: 18px 18px 16px;
+
+    background: var(--bg-card);
+
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+
+    box-shadow: var(--shadow-soft);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover{
+    transform: translateY(-1px);
+
+    box-shadow: 0 5px 14px rgba(15, 23, 42, 0.07);
+}
+
+.dashboard-card-top{
+    display: flex;
+    align-items: center;
+
+    margin-bottom: 12px;
+}
+
+.dashboard-card-title{
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    margin: 0;
+
+    color: var(--text-main);
+
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.dashboard-card-icon{
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+.icon-blue{
+    color: #2563eb;
+}
+
+.icon-indigo{
+    color: #4f46e5;
+}
+
+.icon-red{
+    color: #dc2626;
+}
+
+.icon-slate{
+    color: #475569;
+}
+
+.dashboard-card-value{
+    margin-bottom: 6px;
+
+    color: var(--text-main);
+
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.dashboard-card-subtitle{
+    margin: 0;
+
+    color: var(--text-soft);
+
+    font-size: 0.92rem;
+}
+
+/* =========================================================
+   TÍTULOS, FORMULÁRIOS E BOTÕES
+========================================================= */
+
+.page-title{
+    margin-bottom: 18px;
+
+    color: var(--text-main);
+
+    font-size: 1.95rem;
+    font-weight: 700;
+}
+
+.section-card{
+    padding: 20px;
+
+    background: #ffffff;
+
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+
+    box-shadow: var(--shadow-soft);
+}
+
+.table,
+.form-control,
+.form-select{
+    border-radius: 4px !important;
+}
+
+.form-control,
+.form-select{
+    border: 1px solid #cfd6df;
+}
+
+.btn{
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+========================================================= */
+
+@media (max-width: 991.98px){
+
+    .header-title{
+        font-size: 1.2rem;
+    }
+
+    .header-user span{
+        display: none;
+    }
+
+    .page-title{
+        font-size: 1.55rem;
+    }
+
+    .dashboard-card{
+        padding: 16px;
+    }
+
+    .dashboard-card-value{
+        font-size: 1.7rem;
+    }
 }

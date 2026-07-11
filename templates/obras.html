@@ -1,13 +1,959 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
 
 {% block titulo %}
-<h1>NOME DA TELA</h1>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Obras
+        </h1>
+
+        <p class="text-muted mb-0">
+            Obras, contratos e centros de custo da frota
+        </p>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovaObra"
+    >
+        <i class="bi bi-plus-lg me-1"></i>
+        Nova obra
+    </button>
+
+</div>
 {% endblock %}
 
 {% block conteudo %}
-<div class="card">
-    <div class="card-body">
-        Tela em desenvolvimento.
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-building icon-blue"></i>
+                Total
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_obras }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Obras cadastradas
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-play-circle text-success"></i>
+                Ativas
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_ativas }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Obras em andamento
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-check-circle text-secondary"></i>
+                Concluídas
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_concluidas }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Obras finalizadas
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-truck text-primary"></i>
+                Veículos
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ veiculos_vinculados }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Veículos alocados
+            </p>
+
+        </div>
+    </div>
+
+</div>
+
+<div class="section-card">
+
+    {% if obras %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Obra</th>
+                        <th>Cliente</th>
+                        <th>Localização</th>
+                        <th>Período</th>
+                        <th>Veículos</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for obra in obras %}
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ obra.codigo }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ obra.nome }}
+                                </strong>
+
+                                {% if obra.responsavel %}
+                                    <div class="small text-muted">
+                                        Responsável:
+                                        {{ obra.responsavel }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ obra.cliente or "—" }}
+                            </td>
+
+                            <td>
+                                {{ obra.localizacao or "—" }}
+                            </td>
+
+                            <td>
+                                {% if obra.data_inicio %}
+                                    <div>
+                                        Início:
+                                        {{ obra.data_inicio.strftime("%d/%m/%Y") }}
+                                    </div>
+                                {% else %}
+                                    <div class="text-muted">
+                                        Início não informado
+                                    </div>
+                                {% endif %}
+
+                                {% if obra.data_fim_prevista %}
+                                    <div class="small text-muted">
+                                        Previsão:
+                                        {{ obra.data_fim_prevista.strftime("%d/%m/%Y") }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if obra.veiculos %}
+
+                                    <strong>
+                                        {{ obra.veiculos|length }}
+                                    </strong>
+
+                                    <div class="small text-muted">
+                                        {% for veiculo in obra.veiculos %}
+                                            {{ veiculo.placa }}{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </div>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Nenhum
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if obra.status == "Ativa" %}
+
+                                    <span class="badge text-bg-success">
+                                        Ativa
+                                    </span>
+
+                                {% elif obra.status == "Planejada" %}
+
+                                    <span class="badge text-bg-primary">
+                                        Planejada
+                                    </span>
+
+                                {% elif obra.status == "Pausada" %}
+
+                                    <span class="badge text-bg-warning">
+                                        Pausada
+                                    </span>
+
+                                {% elif obra.status == "Concluída" %}
+
+                                    <span class="badge text-bg-secondary">
+                                        Concluída
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge text-bg-danger">
+                                        Cancelada
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditarObra{{ obra.id }}"
+                                >
+                                    <i class="bi bi-pencil"></i>
+                                    Editar
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-building fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhuma obra cadastrada
+            </h3>
+
+            <p class="text-muted mb-0">
+                Cadastre a primeira obra ou centro de custo.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+<!-- MODAL NOVA OBRA -->
+
+<div
+    class="modal fade"
+    id="modalNovaObra"
+    tabindex="-1"
+    aria-labelledby="modalNovaObraTitulo"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('obras.nova_obra') }}"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="modalNovaObraTitulo"
+                    >
+                        Nova obra
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="codigoNovo"
+                                class="form-label"
+                            >
+                                Código
+                            </label>
+
+                            <input
+                                type="text"
+                                id="codigoNovo"
+                                name="codigo"
+                                class="form-control text-uppercase"
+                                maxlength="50"
+                                placeholder="Ex.: OBR-001"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-8 mb-3">
+
+                            <label
+                                for="nomeNovo"
+                                class="form-label"
+                            >
+                                Nome da obra
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nomeNovo"
+                                name="nome"
+                                class="form-control"
+                                maxlength="150"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="clienteNovo"
+                                class="form-label"
+                            >
+                                Cliente
+                            </label>
+
+                            <input
+                                type="text"
+                                id="clienteNovo"
+                                name="cliente"
+                                class="form-control"
+                                maxlength="150"
+                            >
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="responsavelNovo"
+                                class="form-label"
+                            >
+                                Responsável
+                            </label>
+
+                            <input
+                                type="text"
+                                id="responsavelNovo"
+                                name="responsavel"
+                                class="form-control"
+                                maxlength="150"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="localizacaoNovo"
+                            class="form-label"
+                        >
+                            Localização
+                        </label>
+
+                        <input
+                            type="text"
+                            id="localizacaoNovo"
+                            name="localizacao"
+                            class="form-control"
+                            maxlength="200"
+                            placeholder="Cidade, rodovia ou endereço"
+                        >
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="dataInicioNovo"
+                                class="form-label"
+                            >
+                                Data de início
+                            </label>
+
+                            <input
+                                type="date"
+                                id="dataInicioNovo"
+                                name="data_inicio"
+                                class="form-control"
+                            >
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="dataFimNovo"
+                                class="form-label"
+                            >
+                                Previsão de término
+                            </label>
+
+                            <input
+                                type="date"
+                                id="dataFimNovo"
+                                name="data_fim_prevista"
+                                class="form-control"
+                            >
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="statusNovo"
+                                class="form-label"
+                            >
+                                Status
+                            </label>
+
+                            <select
+                                id="statusNovo"
+                                name="status"
+                                class="form-select"
+                            >
+                                <option value="Planejada">
+                                    Planejada
+                                </option>
+
+                                <option value="Ativa">
+                                    Ativa
+                                </option>
+
+                                <option value="Pausada">
+                                    Pausada
+                                </option>
+
+                                <option value="Concluída">
+                                    Concluída
+                                </option>
+
+                                <option value="Cancelada">
+                                    Cancelada
+                                </option>
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Veículos vinculados
+                        </label>
+
+                        <div class="border rounded-1 p-3">
+
+                            {% if veiculos %}
+
+                                {% for veiculo in veiculos %}
+
+                                    <div class="form-check mb-2">
+
+                                        <input
+                                            type="checkbox"
+                                            id="veiculoNovo{{ veiculo.id }}"
+                                            name="veiculos_ids"
+                                            value="{{ veiculo.id }}"
+                                            class="form-check-input"
+                                        >
+
+                                        <label
+                                            for="veiculoNovo{{ veiculo.id }}"
+                                            class="form-check-label"
+                                        >
+                                            <strong>
+                                                {{ veiculo.placa }}
+                                            </strong>
+
+                                            — {{ veiculo.modelo }}
+
+                                            {% if veiculo.obra %}
+                                                <span class="text-muted">
+                                                    — atualmente em
+                                                    {{ veiculo.obra.nome }}
+                                                </span>
+                                            {% endif %}
+                                        </label>
+
+                                    </div>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Nenhum veículo cadastrado.
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                        <div class="form-text">
+                            Ao selecionar um veículo que já está em outra
+                            obra, ele será transferido para esta obra.
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="observacoesNovo"
+                            class="form-label"
+                        >
+                            Observações
+                        </label>
+
+                        <textarea
+                            id="observacoesNovo"
+                            name="observacoes"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1500"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar obra
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
     </div>
 </div>
+
+<!-- MODAIS DE EDIÇÃO -->
+
+{% for obra in obras %}
+
+<div
+    class="modal fade"
+    id="modalEditarObra{{ obra.id }}"
+    tabindex="-1"
+    aria-labelledby="modalEditarObraTitulo{{ obra.id }}"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('obras.editar_obra', obra_id=obra.id) }}"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="modalEditarObraTitulo{{ obra.id }}"
+                    >
+                        Editar obra
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="codigoEditar{{ obra.id }}"
+                                class="form-label"
+                            >
+                                Código
+                            </label>
+
+                            <input
+                                type="text"
+                                id="codigoEditar{{ obra.id }}"
+                                name="codigo"
+                                class="form-control text-uppercase"
+                                maxlength="50"
+                                value="{{ obra.codigo }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-8 mb-3">
+
+                            <label
+                                for="nomeEditar{{ obra.id }}"
+                                class="form-label"
+                            >
+                                Nome da obra
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nomeEditar{{ obra.id }}"
+                                name="nome"
+                                class="form-control"
+                                maxlength="150"
+                                value="{{ obra.nome }}"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="clienteEditar{{ obra.id }}"
+                                class="form-label"
+                            >
+                                Cliente
+                            </label>
+
+                            <input
+                                type="text"
+                                id="clienteEditar{{ obra.id }}"
+                                name="cliente"
+                                class="form-control"
+                                maxlength="150"
+                                value="{{ obra.cliente or '' }}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="responsavelEditar{{ obra.id }}"
+                                class="form-label"
+                            >
+                                Responsável
+                            </label>
+
+                            <input
+                                type="text"
+                                id="responsavelEditar{{ obra.id }}"
+                                name="responsavel"
+                                class="form-control"
+                                maxlength="150"
+                                value="{{ obra.responsavel or '' }}"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="localizacaoEditar{{ obra.id }}"
+                            class="form-label"
+                        >
+                            Localização
+                        </label>
+
+                        <input
+                            type="text"
+                            id="localizacaoEditar{{ obra.id }}"
+                            name="localizacao"
+                            class="form-control"
+                            maxlength="200"
+                            value="{{ obra.localizacao or '' }}"
+                        >
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="dataInicioEditar{{ obra.id }}"
+                                class="form-label"
+                            >
+                                Data de início
+                            </label>
+
+                            <input
+                                type="date"
+                                id="dataInicioEditar{{ obra.id }}"
+                                name="data_inicio"
+                                class="form-control"
+                                value="{% if obra.data_inicio %}{{ obra.data_inicio.strftime('%Y-%m-%d') }}{% endif %}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="dataFimEditar{{ obra.id }}"
+                                class="form-label"
+                            >
+                                Previsão de término
+                            </label>
+
+                            <input
+                                type="date"
+                                id="dataFimEditar{{ obra.id }}"
+                                name="data_fim_prevista"
+                                class="form-control"
+                                value="{% if obra.data_fim_prevista %}{{ obra.data_fim_prevista.strftime('%Y-%m-%d') }}{% endif %}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="statusEditar{{ obra.id }}"
+                                class="form-label"
+                            >
+                                Status
+                            </label>
+
+                            <select
+                                id="statusEditar{{ obra.id }}"
+                                name="status"
+                                class="form-select"
+                            >
+                                {% for status in ["Planejada", "Ativa", "Pausada", "Concluída", "Cancelada"] %}
+
+                                    <option
+                                        value="{{ status }}"
+                                        {% if obra.status == status %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ status }}
+                                    </option>
+
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Veículos vinculados
+                        </label>
+
+                        <div class="border rounded-1 p-3">
+
+                            {% if veiculos %}
+
+                                {% for veiculo in veiculos %}
+
+                                    <div class="form-check mb-2">
+
+                                        <input
+                                            type="checkbox"
+                                            id="veiculoEditar{{ obra.id }}_{{ veiculo.id }}"
+                                            name="veiculos_ids"
+                                            value="{{ veiculo.id }}"
+                                            class="form-check-input"
+                                            {% if veiculo.obra_id == obra.id %}
+                                                checked
+                                            {% endif %}
+                                        >
+
+                                        <label
+                                            for="veiculoEditar{{ obra.id }}_{{ veiculo.id }}"
+                                            class="form-check-label"
+                                        >
+                                            <strong>
+                                                {{ veiculo.placa }}
+                                            </strong>
+
+                                            — {{ veiculo.modelo }}
+
+                                            {% if veiculo.obra and veiculo.obra_id != obra.id %}
+                                                <span class="text-muted">
+                                                    — atualmente em
+                                                    {{ veiculo.obra.nome }}
+                                                </span>
+                                            {% endif %}
+                                        </label>
+
+                                    </div>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <span class="text-muted">
+                                    Nenhum veículo cadastrado.
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="observacoesEditar{{ obra.id }}"
+                            class="form-label"
+                        >
+                            Observações
+                        </label>
+
+                        <textarea
+                            id="observacoesEditar{{ obra.id }}"
+                            name="observacoes"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1500"
+                        >{{ obra.observacoes or '' }}</textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar alterações
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% endfor %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const camposCodigo = document.querySelectorAll(
+        'input[name="codigo"]'
+    );
+
+    camposCodigo.forEach(function (campo) {
+        campo.addEventListener("input", function () {
+            campo.value = campo.value.toUpperCase();
+        });
+    });
+});
+</script>
+
 {% endblock %}

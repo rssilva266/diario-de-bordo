@@ -1,13 +1,1267 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
 
 {% block titulo %}
-<h1>NOME DA TELA</h1>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Diário de Bordo
+        </h1>
+
+        <p class="text-muted mb-0">
+            Controle de deslocamentos, motoristas e quilometragem
+        </p>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovoDiario"
+    >
+        <i class="bi bi-plus-lg me-1"></i>
+        Novo diário
+    </button>
+
+</div>
 {% endblock %}
 
 {% block conteudo %}
-<div class="card">
-    <div class="card-body">
-        Tela em desenvolvimento.
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-journal-text icon-blue"></i>
+                Total
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_diarios }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Registros realizados
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-clock-history text-warning"></i>
+                Em andamento
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_em_andamento }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Deslocamentos ainda abertos
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-check-circle text-success"></i>
+                Concluídos
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_concluidos }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Deslocamentos finalizados
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-signpost-2 text-primary"></i>
+                Quilometragem
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ "{:,}".format(total_km).replace(",", ".") }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Quilômetros registrados
+            </p>
+
+        </div>
+    </div>
+
+</div>
+
+<div class="section-card mb-3">
+
+    <form
+        method="GET"
+        action="{{ url_for('diario.listar_diarios') }}"
+    >
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-12 col-md-2">
+
+                <label
+                    for="filtroStatus"
+                    class="form-label"
+                >
+                    Status
+                </label>
+
+                <select
+                    id="filtroStatus"
+                    name="status"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos
+                    </option>
+
+                    <option
+                        value="Em andamento"
+                        {% if status_filtro == "Em andamento" %}
+                            selected
+                        {% endif %}
+                    >
+                        Em andamento
+                    </option>
+
+                    <option
+                        value="Concluído"
+                        {% if status_filtro == "Concluído" %}
+                            selected
+                        {% endif %}
+                    >
+                        Concluído
+                    </option>
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-3">
+
+                <label
+                    for="filtroVeiculo"
+                    class="form-label"
+                >
+                    Veículo
+                </label>
+
+                <select
+                    id="filtroVeiculo"
+                    name="veiculo_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos os veículos
+                    </option>
+
+                    {% for veiculo in veiculos %}
+                        <option
+                            value="{{ veiculo.id }}"
+                            {% if veiculo_filtro == veiculo.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ veiculo.placa }} — {{ veiculo.modelo }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-3">
+
+                <label
+                    for="filtroMotorista"
+                    class="form-label"
+                >
+                    Motorista
+                </label>
+
+                <select
+                    id="filtroMotorista"
+                    name="motorista_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos os motoristas
+                    </option>
+
+                    {% for motorista in motoristas %}
+                        <option
+                            value="{{ motorista.id }}"
+                            {% if motorista_filtro == motorista.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ motorista.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-6 col-md-2">
+
+                <label
+                    for="filtroDataInicio"
+                    class="form-label"
+                >
+                    Data inicial
+                </label>
+
+                <input
+                    type="date"
+                    id="filtroDataInicio"
+                    name="data_inicio"
+                    class="form-control"
+                    value="{{ data_inicio_filtro }}"
+                >
+
+            </div>
+
+            <div class="col-6 col-md-2">
+
+                <label
+                    for="filtroDataFim"
+                    class="form-label"
+                >
+                    Data final
+                </label>
+
+                <input
+                    type="date"
+                    id="filtroDataFim"
+                    name="data_fim"
+                    class="form-control"
+                    value="{{ data_fim_filtro }}"
+                >
+
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    <i class="bi bi-funnel me-1"></i>
+                    Filtrar
+                </button>
+
+                <a
+                    href="{{ url_for('diario.listar_diarios') }}"
+                    class="btn btn-outline-secondary"
+                >
+                    Limpar
+                </a>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+<div class="section-card">
+
+    {% if diarios %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Veículo</th>
+                        <th>Motorista</th>
+                        <th>Trajeto</th>
+                        <th>Horários</th>
+                        <th>Quilometragem</th>
+                        <th>Obra</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for diario in diarios %}
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ diario.data.strftime("%d/%m/%Y") }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ diario.veiculo.placa }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    {{ diario.veiculo.modelo }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {{ diario.motorista.nome }}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ diario.origem }}
+                                </strong>
+
+                                <i class="bi bi-arrow-right mx-1 text-muted"></i>
+
+                                <strong>
+                                    {{ diario.destino }}
+                                </strong>
+
+                                {% if diario.finalidade %}
+                                    <div class="small text-muted">
+                                        {{ diario.finalidade }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <div>
+                                    Saída:
+                                    {{ diario.hora_saida.strftime("%H:%M") }}
+                                </div>
+
+                                <div class="small text-muted">
+                                    Retorno:
+                                    {% if diario.hora_retorno %}
+                                        {{ diario.hora_retorno.strftime("%H:%M") }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <td>
+                                <div>
+                                    {{ diario.km_inicial }} km
+                                    <i class="bi bi-arrow-right mx-1 text-muted"></i>
+
+                                    {% if diario.km_final is not none %}
+                                        {{ diario.km_final }} km
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </div>
+
+                                {% if diario.km_percorrida is not none %}
+                                    <div class="small text-muted">
+                                        Percorridos:
+                                        <strong>
+                                            {{ diario.km_percorrida }} km
+                                        </strong>
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if diario.obra %}
+                                    <strong>
+                                        {{ diario.obra.codigo }}
+                                    </strong>
+
+                                    <div class="small text-muted">
+                                        {{ diario.obra.nome }}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">
+                                        Sem obra
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if diario.status == "Concluído" %}
+
+                                    <span class="badge text-bg-success">
+                                        Concluído
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge text-bg-warning">
+                                        Em andamento
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditarDiario{{ diario.id }}"
+                                >
+                                    <i class="bi bi-pencil"></i>
+                                    Editar
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-journal-text fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhum diário de bordo encontrado
+            </h3>
+
+            <p class="text-muted mb-0">
+                Registre o primeiro deslocamento da frota.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+<!-- MODAL NOVO DIÁRIO -->
+
+<div
+    class="modal fade"
+    id="modalNovoDiario"
+    tabindex="-1"
+    aria-labelledby="modalNovoDiarioTitulo"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('diario.novo_diario') }}"
+                class="form-diario"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="modalNovoDiarioTitulo"
+                    >
+                        Novo diário de bordo
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label
+                                for="dataNovo"
+                                class="form-label"
+                            >
+                                Data
+                            </label>
+
+                            <input
+                                type="date"
+                                id="dataNovo"
+                                name="data"
+                                class="form-control"
+                                value="{{ hoje }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-5 mb-3">
+
+                            <label
+                                for="motoristaNovo"
+                                class="form-label"
+                            >
+                                Motorista
+                            </label>
+
+                            <select
+                                id="motoristaNovo"
+                                name="motorista_id"
+                                class="form-select campo-motorista"
+                                required
+                            >
+                                <option value="">
+                                    Selecione
+                                </option>
+
+                                {% for motorista in motoristas %}
+                                    <option
+                                        value="{{ motorista.id }}"
+                                        data-veiculo-id="{{ motorista.veiculo_id or '' }}"
+                                    >
+                                        {{ motorista.nome }}
+
+                                        {% if motorista.veiculo %}
+                                            — {{ motorista.veiculo.placa }}
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="veiculoNovo"
+                                class="form-label"
+                            >
+                                Veículo
+                            </label>
+
+                            <select
+                                id="veiculoNovo"
+                                name="veiculo_id"
+                                class="form-select campo-veiculo"
+                                required
+                            >
+                                <option value="">
+                                    Selecione
+                                </option>
+
+                                {% for veiculo in veiculos %}
+                                    <option
+                                        value="{{ veiculo.id }}"
+                                        data-km="{{ veiculo.km_atual }}"
+                                        data-obra-id="{{ veiculo.obra_id or '' }}"
+                                    >
+                                        {{ veiculo.placa }} — {{ veiculo.modelo }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="obraNovo"
+                                class="form-label"
+                            >
+                                Obra ou centro de custo
+                            </label>
+
+                            <select
+                                id="obraNovo"
+                                name="obra_id"
+                                class="form-select campo-obra"
+                            >
+                                <option value="">
+                                    Sem obra vinculada
+                                </option>
+
+                                {% for obra in obras %}
+                                    <option value="{{ obra.id }}">
+                                        {{ obra.codigo }} — {{ obra.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="origemNovo"
+                                class="form-label"
+                            >
+                                Origem
+                            </label>
+
+                            <input
+                                type="text"
+                                id="origemNovo"
+                                name="origem"
+                                class="form-control"
+                                maxlength="200"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="destinoNovo"
+                                class="form-label"
+                            >
+                                Destino
+                            </label>
+
+                            <input
+                                type="text"
+                                id="destinoNovo"
+                                name="destino"
+                                class="form-control"
+                                maxlength="200"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label
+                                for="horaSaidaNovo"
+                                class="form-label"
+                            >
+                                Hora de saída
+                            </label>
+
+                            <input
+                                type="time"
+                                id="horaSaidaNovo"
+                                name="hora_saida"
+                                class="form-control"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label
+                                for="kmInicialNovo"
+                                class="form-label"
+                            >
+                                KM inicial
+                            </label>
+
+                            <input
+                                type="number"
+                                id="kmInicialNovo"
+                                name="km_inicial"
+                                class="form-control campo-km-inicial"
+                                min="0"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label
+                                for="horaRetornoNovo"
+                                class="form-label"
+                            >
+                                Hora de retorno
+                            </label>
+
+                            <input
+                                type="time"
+                                id="horaRetornoNovo"
+                                name="hora_retorno"
+                                class="form-control campo-hora-retorno"
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label
+                                for="kmFinalNovo"
+                                class="form-label"
+                            >
+                                KM final
+                            </label>
+
+                            <input
+                                type="number"
+                                id="kmFinalNovo"
+                                name="km_final"
+                                class="form-control campo-km-final"
+                                min="0"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-text mb-3">
+                        Para deixar o diário em andamento, mantenha a hora
+                        de retorno e a KM final vazias.
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="finalidadeNovo"
+                            class="form-label"
+                        >
+                            Finalidade do deslocamento
+                        </label>
+
+                        <input
+                            type="text"
+                            id="finalidadeNovo"
+                            name="finalidade"
+                            class="form-control"
+                            maxlength="250"
+                            placeholder="Ex.: Transporte de equipe, vistoria ou entrega"
+                        >
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="ocorrenciasNovo"
+                            class="form-label"
+                        >
+                            Ocorrências
+                        </label>
+
+                        <textarea
+                            id="ocorrenciasNovo"
+                            name="ocorrencias"
+                            class="form-control"
+                            rows="3"
+                            maxlength="2000"
+                            placeholder="Avarias, atrasos, problemas mecânicos ou observações"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar diário
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
     </div>
 </div>
+
+<!-- MODAIS DE EDIÇÃO -->
+
+{% for diario in diarios %}
+
+<div
+    class="modal fade"
+    id="modalEditarDiario{{ diario.id }}"
+    tabindex="-1"
+    aria-labelledby="modalEditarDiarioTitulo{{ diario.id }}"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('diario.editar_diario', diario_id=diario.id) }}"
+                class="form-diario"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="modalEditarDiarioTitulo{{ diario.id }}"
+                    >
+                        Editar diário de bordo
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Data
+                            </label>
+
+                            <input
+                                type="date"
+                                name="data"
+                                class="form-control"
+                                value="{{ diario.data.strftime('%Y-%m-%d') }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-5 mb-3">
+
+                            <label class="form-label">
+                                Motorista
+                            </label>
+
+                            <select
+                                name="motorista_id"
+                                class="form-select campo-motorista"
+                                required
+                            >
+                                {% for motorista in motoristas %}
+                                    <option
+                                        value="{{ motorista.id }}"
+                                        data-veiculo-id="{{ motorista.veiculo_id or '' }}"
+                                        {% if diario.motorista_id == motorista.id %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ motorista.nome }}
+
+                                        {% if motorista.veiculo %}
+                                            — {{ motorista.veiculo.placa }}
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Veículo
+                            </label>
+
+                            <select
+                                name="veiculo_id"
+                                class="form-select campo-veiculo"
+                                required
+                            >
+                                {% for veiculo in veiculos %}
+                                    <option
+                                        value="{{ veiculo.id }}"
+                                        data-km="{{ veiculo.km_atual }}"
+                                        data-obra-id="{{ veiculo.obra_id or '' }}"
+                                        {% if diario.veiculo_id == veiculo.id %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ veiculo.placa }} — {{ veiculo.modelo }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Obra ou centro de custo
+                            </label>
+
+                            <select
+                                name="obra_id"
+                                class="form-select campo-obra"
+                            >
+                                <option value="">
+                                    Sem obra vinculada
+                                </option>
+
+                                {% for obra in obras %}
+                                    <option
+                                        value="{{ obra.id }}"
+                                        {% if diario.obra_id == obra.id %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ obra.codigo }} — {{ obra.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Origem
+                            </label>
+
+                            <input
+                                type="text"
+                                name="origem"
+                                class="form-control"
+                                maxlength="200"
+                                value="{{ diario.origem }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Destino
+                            </label>
+
+                            <input
+                                type="text"
+                                name="destino"
+                                class="form-control"
+                                maxlength="200"
+                                value="{{ diario.destino }}"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Hora de saída
+                            </label>
+
+                            <input
+                                type="time"
+                                name="hora_saida"
+                                class="form-control"
+                                value="{{ diario.hora_saida.strftime('%H:%M') }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                KM inicial
+                            </label>
+
+                            <input
+                                type="number"
+                                name="km_inicial"
+                                class="form-control campo-km-inicial"
+                                min="0"
+                                value="{{ diario.km_inicial }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Hora de retorno
+                            </label>
+
+                            <input
+                                type="time"
+                                name="hora_retorno"
+                                class="form-control campo-hora-retorno"
+                                value="{% if diario.hora_retorno %}{{ diario.hora_retorno.strftime('%H:%M') }}{% endif %}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                KM final
+                            </label>
+
+                            <input
+                                type="number"
+                                name="km_final"
+                                class="form-control campo-km-final"
+                                min="0"
+                                value="{% if diario.km_final is not none %}{{ diario.km_final }}{% endif %}"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Finalidade do deslocamento
+                        </label>
+
+                        <input
+                            type="text"
+                            name="finalidade"
+                            class="form-control"
+                            maxlength="250"
+                            value="{{ diario.finalidade or '' }}"
+                        >
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Ocorrências
+                        </label>
+
+                        <textarea
+                            name="ocorrencias"
+                            class="form-control"
+                            rows="3"
+                            maxlength="2000"
+                        >{{ diario.ocorrencias or '' }}</textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar alterações
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% endfor %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    document
+        .querySelectorAll(".form-diario")
+        .forEach(function (formulario) {
+
+            const campoMotorista = formulario.querySelector(
+                ".campo-motorista"
+            );
+
+            const campoVeiculo = formulario.querySelector(
+                ".campo-veiculo"
+            );
+
+            const campoObra = formulario.querySelector(
+                ".campo-obra"
+            );
+
+            const campoKmInicial = formulario.querySelector(
+                ".campo-km-inicial"
+            );
+
+            const campoKmFinal = formulario.querySelector(
+                ".campo-km-final"
+            );
+
+            const campoHoraRetorno = formulario.querySelector(
+                ".campo-hora-retorno"
+            );
+
+            function atualizarDadosVeiculo() {
+                if (!campoVeiculo) {
+                    return;
+                }
+
+                const opcao = campoVeiculo.options[
+                    campoVeiculo.selectedIndex
+                ];
+
+                if (!opcao || !opcao.value) {
+                    return;
+                }
+
+                const kmAtual = opcao.dataset.km || "";
+                const obraId = opcao.dataset.obraId || "";
+
+                if (
+                    campoKmInicial
+                    && !campoKmInicial.value
+                ) {
+                    campoKmInicial.value = kmAtual;
+                }
+
+                if (
+                    campoObra
+                    && !campoObra.value
+                    && obraId
+                ) {
+                    campoObra.value = obraId;
+                }
+            }
+
+            if (campoMotorista) {
+                campoMotorista.addEventListener(
+                    "change",
+                    function () {
+                        const opcao = campoMotorista.options[
+                            campoMotorista.selectedIndex
+                        ];
+
+                        const veiculoId = (
+                            opcao.dataset.veiculoId
+                            || ""
+                        );
+
+                        if (
+                            veiculoId
+                            && campoVeiculo
+                        ) {
+                            campoVeiculo.value = veiculoId;
+                            atualizarDadosVeiculo();
+                        }
+                    }
+                );
+            }
+
+            if (campoVeiculo) {
+                campoVeiculo.addEventListener(
+                    "change",
+                    atualizarDadosVeiculo
+                );
+            }
+
+            if (campoKmInicial && campoKmFinal) {
+                campoKmInicial.addEventListener(
+                    "input",
+                    function () {
+                        campoKmFinal.min = (
+                            campoKmInicial.value
+                            || "0"
+                        );
+                    }
+                );
+            }
+
+            formulario.addEventListener(
+                "submit",
+                function (event) {
+                    const possuiRetorno = Boolean(
+                        campoHoraRetorno
+                        && campoHoraRetorno.value
+                    );
+
+                    const possuiKmFinal = Boolean(
+                        campoKmFinal
+                        && campoKmFinal.value
+                    );
+
+                    if (possuiRetorno !== possuiKmFinal) {
+                        event.preventDefault();
+
+                        alert(
+                            "Informe a hora de retorno e a KM final para concluir o diário."
+                        );
+                    }
+                }
+            );
+
+        });
+
+});
+</script>
+
 {% endblock %}

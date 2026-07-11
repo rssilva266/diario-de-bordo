@@ -1,13 +1,924 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
 
 {% block titulo %}
-<h1>NOME DA TELA</h1>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Motoristas
+        </h1>
+
+        <p class="text-muted mb-0">
+            {{ total_motoristas }} motoristas cadastrados
+        </p>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovoMotorista"
+    >
+        <i class="bi bi-plus-lg me-1"></i>
+        Novo motorista
+    </button>
+
+</div>
 {% endblock %}
 
 {% block conteudo %}
-<div class="card">
-    <div class="card-body">
-        Tela em desenvolvimento.
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-md-4">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-people icon-blue"></i>
+                Total
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_motoristas }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Motoristas cadastrados
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-person-check text-success"></i>
+                Ativos
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_ativos }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Motoristas em atividade
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-exclamation-triangle text-warning"></i>
+                Alertas de CNH
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_alertas }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Vencidas ou próximas do vencimento
+            </p>
+
+        </div>
+    </div>
+
+</div>
+
+<div class="section-card">
+
+    {% if motoristas %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Motorista</th>
+                        <th>CPF</th>
+                        <th>CNH</th>
+                        <th>Categoria</th>
+                        <th>Veículo</th>
+                        <th>Validade</th>
+                        <th>Situação da CNH</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for motorista in motoristas %}
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ motorista.nome }}
+                                </strong>
+
+                                {% if motorista.telefone %}
+                                    <div class="small text-muted">
+                                        {{ motorista.telefone }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ motorista.cpf }}
+                            </td>
+
+                            <td>
+                                {{ motorista.cnh }}
+                            </td>
+
+                            <td>
+                                {{ motorista.categoria_cnh }}
+                            </td>
+
+                            <td>
+                                {% if motorista.veiculo %}
+                                    <strong>
+                                        {{ motorista.veiculo.placa }}
+                                    </strong>
+
+                                    <div class="small text-muted">
+                                        {{ motorista.veiculo.modelo }}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">
+                                        Não vinculado
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ motorista.validade_cnh.strftime("%d/%m/%Y") }}
+                            </td>
+
+                            <td>
+                                {% if motorista.situacao_cnh == "Vencida" %}
+
+                                    <span class="badge text-bg-danger">
+                                        Vencida
+                                    </span>
+
+                                {% elif motorista.situacao_cnh == "Vence em breve" %}
+
+                                    <span class="badge text-bg-warning">
+                                        Vence em
+                                        {{ motorista.dias_para_vencimento_cnh }}
+                                        dias
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge text-bg-success">
+                                        Regular
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if motorista.status == "Ativo" %}
+
+                                    <span class="badge text-bg-success">
+                                        Ativo
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge text-bg-secondary">
+                                        Inativo
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditarMotorista{{ motorista.id }}"
+                                >
+                                    <i class="bi bi-pencil"></i>
+                                    Editar
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-person-badge fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhum motorista cadastrado
+            </h3>
+
+            <p class="text-muted mb-0">
+                Cadastre o primeiro motorista da empresa.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+<!-- MODAL NOVO MOTORISTA -->
+
+<div
+    class="modal fade"
+    id="modalNovoMotorista"
+    tabindex="-1"
+    aria-labelledby="modalNovoMotoristaTitulo"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('motoristas.novo_motorista') }}"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="modalNovoMotoristaTitulo"
+                    >
+                        Novo motorista
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+
+                        <label
+                            for="nomeNovo"
+                            class="form-label"
+                        >
+                            Nome completo
+                        </label>
+
+                        <input
+                            type="text"
+                            id="nomeNovo"
+                            name="nome"
+                            class="form-control"
+                            maxlength="150"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="cpfNovo"
+                                class="form-label"
+                            >
+                                CPF
+                            </label>
+
+                            <input
+                                type="text"
+                                id="cpfNovo"
+                                name="cpf"
+                                class="form-control campo-cpf"
+                                maxlength="14"
+                                placeholder="000.000.000-00"
+                                autocomplete="off"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="telefoneNovo"
+                                class="form-label"
+                            >
+                                Telefone
+                            </label>
+
+                            <input
+                                type="text"
+                                id="telefoneNovo"
+                                name="telefone"
+                                class="form-control campo-telefone"
+                                maxlength="15"
+                                placeholder="(00) 00000-0000"
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-5 mb-3">
+
+                            <label
+                                for="cnhNovo"
+                                class="form-label"
+                            >
+                                Número da CNH
+                            </label>
+
+                            <input
+                                type="text"
+                                id="cnhNovo"
+                                name="cnh"
+                                class="form-control campo-cnh"
+                                maxlength="11"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label
+                                for="categoriaNovo"
+                                class="form-label"
+                            >
+                                Categoria
+                            </label>
+
+                            <select
+                                id="categoriaNovo"
+                                name="categoria_cnh"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Selecione
+                                </option>
+
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="AB">AB</option>
+                                <option value="C">C</option>
+                                <option value="AC">AC</option>
+                                <option value="D">D</option>
+                                <option value="AD">AD</option>
+                                <option value="E">E</option>
+                                <option value="AE">AE</option>
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="validadeNovo"
+                                class="form-label"
+                            >
+                                Validade da CNH
+                            </label>
+
+                            <input
+                                type="date"
+                                id="validadeNovo"
+                                name="validade_cnh"
+                                class="form-control"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-8 mb-3">
+
+                            <label
+                                for="veiculoNovo"
+                                class="form-label"
+                            >
+                                Veículo vinculado
+                            </label>
+
+                            <select
+                                id="veiculoNovo"
+                                name="veiculo_id"
+                                class="form-select"
+                            >
+                                <option value="">
+                                    Nenhum veículo
+                                </option>
+
+                                {% for veiculo in veiculos %}
+                                    <option value="{{ veiculo.id }}">
+                                        {{ veiculo.placa }} — {{ veiculo.modelo }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="statusNovo"
+                                class="form-label"
+                            >
+                                Status
+                            </label>
+
+                            <select
+                                id="statusNovo"
+                                name="status"
+                                class="form-select"
+                            >
+                                <option value="Ativo">
+                                    Ativo
+                                </option>
+
+                                <option value="Inativo">
+                                    Inativo
+                                </option>
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="observacoesNovo"
+                            class="form-label"
+                        >
+                            Observações
+                        </label>
+
+                        <textarea
+                            id="observacoesNovo"
+                            name="observacoes"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1000"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar motorista
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
     </div>
 </div>
+
+<!-- MODAIS DE EDIÇÃO -->
+
+{% for motorista in motoristas %}
+
+<div
+    class="modal fade"
+    id="modalEditarMotorista{{ motorista.id }}"
+    tabindex="-1"
+    aria-labelledby="modalEditarMotoristaTitulo{{ motorista.id }}"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('motoristas.editar_motorista', motorista_id=motorista.id) }}"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="modalEditarMotoristaTitulo{{ motorista.id }}"
+                    >
+                        Editar motorista
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+
+                        <label
+                            for="nomeEditar{{ motorista.id }}"
+                            class="form-label"
+                        >
+                            Nome completo
+                        </label>
+
+                        <input
+                            type="text"
+                            id="nomeEditar{{ motorista.id }}"
+                            name="nome"
+                            class="form-control"
+                            maxlength="150"
+                            value="{{ motorista.nome }}"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="cpfEditar{{ motorista.id }}"
+                                class="form-label"
+                            >
+                                CPF
+                            </label>
+
+                            <input
+                                type="text"
+                                id="cpfEditar{{ motorista.id }}"
+                                name="cpf"
+                                class="form-control campo-cpf"
+                                maxlength="14"
+                                value="{{ motorista.cpf }}"
+                                autocomplete="off"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="telefoneEditar{{ motorista.id }}"
+                                class="form-label"
+                            >
+                                Telefone
+                            </label>
+
+                            <input
+                                type="text"
+                                id="telefoneEditar{{ motorista.id }}"
+                                name="telefone"
+                                class="form-control campo-telefone"
+                                maxlength="15"
+                                value="{{ motorista.telefone or '' }}"
+                                autocomplete="off"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-5 mb-3">
+
+                            <label
+                                for="cnhEditar{{ motorista.id }}"
+                                class="form-label"
+                            >
+                                Número da CNH
+                            </label>
+
+                            <input
+                                type="text"
+                                id="cnhEditar{{ motorista.id }}"
+                                name="cnh"
+                                class="form-control campo-cnh"
+                                maxlength="11"
+                                value="{{ motorista.cnh }}"
+                                inputmode="numeric"
+                                autocomplete="off"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label
+                                for="categoriaEditar{{ motorista.id }}"
+                                class="form-label"
+                            >
+                                Categoria
+                            </label>
+
+                            <select
+                                id="categoriaEditar{{ motorista.id }}"
+                                name="categoria_cnh"
+                                class="form-select"
+                                required
+                            >
+                                {% for categoria in ["A", "B", "AB", "C", "AC", "D", "AD", "E", "AE"] %}
+                                    <option
+                                        value="{{ categoria }}"
+                                        {% if motorista.categoria_cnh == categoria %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ categoria }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="validadeEditar{{ motorista.id }}"
+                                class="form-label"
+                            >
+                                Validade da CNH
+                            </label>
+
+                            <input
+                                type="date"
+                                id="validadeEditar{{ motorista.id }}"
+                                name="validade_cnh"
+                                class="form-control"
+                                value="{{ motorista.validade_cnh.strftime('%Y-%m-%d') }}"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-8 mb-3">
+
+                            <label
+                                for="veiculoEditar{{ motorista.id }}"
+                                class="form-label"
+                            >
+                                Veículo vinculado
+                            </label>
+
+                            <select
+                                id="veiculoEditar{{ motorista.id }}"
+                                name="veiculo_id"
+                                class="form-select"
+                            >
+                                <option value="">
+                                    Nenhum veículo
+                                </option>
+
+                                {% for veiculo in veiculos %}
+                                    <option
+                                        value="{{ veiculo.id }}"
+                                        {% if motorista.veiculo_id == veiculo.id %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ veiculo.placa }} — {{ veiculo.modelo }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label
+                                for="statusEditar{{ motorista.id }}"
+                                class="form-label"
+                            >
+                                Status
+                            </label>
+
+                            <select
+                                id="statusEditar{{ motorista.id }}"
+                                name="status"
+                                class="form-select"
+                            >
+                                <option
+                                    value="Ativo"
+                                    {% if motorista.status == "Ativo" %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    Ativo
+                                </option>
+
+                                <option
+                                    value="Inativo"
+                                    {% if motorista.status == "Inativo" %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    Inativo
+                                </option>
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="observacoesEditar{{ motorista.id }}"
+                            class="form-label"
+                        >
+                            Observações
+                        </label>
+
+                        <textarea
+                            id="observacoesEditar{{ motorista.id }}"
+                            name="observacoes"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1000"
+                        >{{ motorista.observacoes or '' }}</textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar alterações
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% endfor %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    function formatarCpf(campo) {
+        let valor = campo.value
+            .replace(/\D/g, "")
+            .slice(0, 11);
+
+        if (valor.length > 9) {
+            valor = valor.replace(
+                /^(\d{3})(\d{3})(\d{3})(\d{1,2}).*/,
+                "$1.$2.$3-$4"
+            );
+        } else if (valor.length > 6) {
+            valor = valor.replace(
+                /^(\d{3})(\d{3})(\d{1,3}).*/,
+                "$1.$2.$3"
+            );
+        } else if (valor.length > 3) {
+            valor = valor.replace(
+                /^(\d{3})(\d{1,3}).*/,
+                "$1.$2"
+            );
+        }
+
+        campo.value = valor;
+    }
+
+    function formatarTelefone(campo) {
+        let valor = campo.value
+            .replace(/\D/g, "")
+            .slice(0, 11);
+
+        if (valor.length > 10) {
+            valor = valor.replace(
+                /^(\d{2})(\d{5})(\d{1,4}).*/,
+                "($1) $2-$3"
+            );
+        } else if (valor.length > 6) {
+            valor = valor.replace(
+                /^(\d{2})(\d{4})(\d{1,4}).*/,
+                "($1) $2-$3"
+            );
+        } else if (valor.length > 2) {
+            valor = valor.replace(
+                /^(\d{2})(\d+).*/,
+                "($1) $2"
+            );
+        } else if (valor.length > 0) {
+            valor = valor.replace(
+                /^(\d{1,2}).*/,
+                "($1"
+            );
+        }
+
+        campo.value = valor;
+    }
+
+    document
+        .querySelectorAll(".campo-cpf")
+        .forEach(function (campo) {
+            campo.addEventListener("input", function () {
+                formatarCpf(campo);
+            });
+        });
+
+    document
+        .querySelectorAll(".campo-telefone")
+        .forEach(function (campo) {
+            campo.addEventListener("input", function () {
+                formatarTelefone(campo);
+            });
+        });
+
+    document
+        .querySelectorAll(".campo-cnh")
+        .forEach(function (campo) {
+            campo.addEventListener("input", function () {
+                campo.value = campo.value
+                    .replace(/\D/g, "")
+                    .slice(0, 11);
+            });
+        });
+
+});
+</script>
+
 {% endblock %}

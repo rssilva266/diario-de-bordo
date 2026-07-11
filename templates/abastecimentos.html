@@ -1,13 +1,1442 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
 
 {% block titulo %}
-<h1>NOME DA TELA</h1>
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Abastecimentos
+        </h1>
+
+        <p class="text-muted mb-0">
+            Controle de combustível, custos e comprovantes
+        </p>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovoAbastecimento"
+    >
+        <i class="bi bi-plus-lg me-1"></i>
+        Novo abastecimento
+    </button>
+
+</div>
 {% endblock %}
 
 {% block conteudo %}
-<div class="card">
-    <div class="card-body">
-        Tela em desenvolvimento.
+
+<div class="row g-3 mb-3">
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-receipt icon-blue"></i>
+                Registros
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ total_registros }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                No período filtrado
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-droplet text-primary"></i>
+                Litros
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                {{ "%.3f"|format(total_litros)|replace(".", ",") }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Volume abastecido
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-cash-stack text-success"></i>
+                Investimento
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                R$
+                {{
+                    "{:,.2f}".format(total_valor)
+                    .replace(",", "X")
+                    .replace(".", ",")
+                    .replace("X", ".")
+                }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Valor total
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-title">
+                <i class="bi bi-graph-up text-warning"></i>
+                Preço médio
+            </div>
+
+            <div class="dashboard-card-value mt-3">
+                R$ {{ "%.3f"|format(preco_medio)|replace(".", ",") }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Média ponderada por litro
+            </p>
+
+        </div>
+    </div>
+
+</div>
+
+<div class="section-card mb-3">
+
+    <form
+        method="GET"
+        action="{{ url_for('abastecimentos.listar_abastecimentos') }}"
+    >
+
+        <div class="row g-3 align-items-end">
+
+            <div class="col-12 col-md-3">
+
+                <label
+                    for="filtroVeiculo"
+                    class="form-label"
+                >
+                    Veículo
+                </label>
+
+                <select
+                    id="filtroVeiculo"
+                    name="veiculo_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos os veículos
+                    </option>
+
+                    {% for veiculo in veiculos %}
+                        <option
+                            value="{{ veiculo.id }}"
+                            {% if veiculo_filtro == veiculo.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ veiculo.placa }} — {{ veiculo.modelo }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-3">
+
+                <label
+                    for="filtroMotorista"
+                    class="form-label"
+                >
+                    Motorista
+                </label>
+
+                <select
+                    id="filtroMotorista"
+                    name="motorista_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todos os motoristas
+                    </option>
+
+                    {% for motorista in motoristas %}
+                        <option
+                            value="{{ motorista.id }}"
+                            {% if motorista_filtro == motorista.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ motorista.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-12 col-md-2">
+
+                <label
+                    for="filtroObra"
+                    class="form-label"
+                >
+                    Obra
+                </label>
+
+                <select
+                    id="filtroObra"
+                    name="obra_id"
+                    class="form-select"
+                >
+                    <option value="">
+                        Todas
+                    </option>
+
+                    {% for obra in obras %}
+                        <option
+                            value="{{ obra.id }}"
+                            {% if obra_filtro == obra.id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ obra.codigo }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+            </div>
+
+            <div class="col-6 col-md-2">
+
+                <label
+                    for="filtroDataInicio"
+                    class="form-label"
+                >
+                    Data inicial
+                </label>
+
+                <input
+                    type="date"
+                    id="filtroDataInicio"
+                    name="data_inicio"
+                    class="form-control"
+                    value="{{ data_inicio_filtro }}"
+                >
+
+            </div>
+
+            <div class="col-6 col-md-2">
+
+                <label
+                    for="filtroDataFim"
+                    class="form-label"
+                >
+                    Data final
+                </label>
+
+                <input
+                    type="date"
+                    id="filtroDataFim"
+                    name="data_fim"
+                    class="form-control"
+                    value="{{ data_fim_filtro }}"
+                >
+
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    <i class="bi bi-funnel me-1"></i>
+                    Filtrar
+                </button>
+
+                <a
+                    href="{{ url_for('abastecimentos.listar_abastecimentos') }}"
+                    class="btn btn-outline-secondary"
+                >
+                    Limpar
+                </a>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+<div class="section-card">
+
+    {% if abastecimentos %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Veículo</th>
+                        <th>Motorista</th>
+                        <th>Posto</th>
+                        <th>Combustível</th>
+                        <th>Litros</th>
+                        <th>Valor</th>
+                        <th>KM</th>
+                        <th>Obra</th>
+                        <th>Comprovante</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for abastecimento in abastecimentos %}
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ abastecimento.data.strftime("%d/%m/%Y") }}
+                                </strong>
+
+                                {% if abastecimento.hora %}
+                                    <div class="small text-muted">
+                                        {{ abastecimento.hora.strftime("%H:%M") }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ abastecimento.veiculo.placa }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    {{ abastecimento.veiculo.modelo }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {{ abastecimento.motorista.nome }}
+                            </td>
+
+                            <td>
+                                {{ abastecimento.posto }}
+
+                                {% if abastecimento.numero_nota %}
+                                    <div class="small text-muted">
+                                        Nota:
+                                        {{ abastecimento.numero_nota }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ abastecimento.combustivel }}
+
+                                {% if abastecimento.tanque_cheio %}
+                                    <div class="small text-success">
+                                        Tanque cheio
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{
+                                    "%.3f"|format(abastecimento.litros)
+                                    |replace(".", ",")
+                                }}
+                                L
+                            </td>
+
+                            <td>
+                                <strong>
+                                    R$
+                                    {{
+                                        "{:,.2f}".format(abastecimento.valor_total)
+                                        .replace(",", "X")
+                                        .replace(".", ",")
+                                        .replace("X", ".")
+                                    }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    R$
+                                    {{
+                                        "%.3f"|format(abastecimento.valor_litro)
+                                        |replace(".", ",")
+                                    }}
+                                    /L
+                                </div>
+                            </td>
+
+                            <td>
+                                {{ abastecimento.km }} km
+                            </td>
+
+                            <td>
+                                {% if abastecimento.obra %}
+
+                                    <strong>
+                                        {{ abastecimento.obra.codigo }}
+                                    </strong>
+
+                                    <div class="small text-muted">
+                                        {{ abastecimento.obra.nome }}
+                                    </div>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Sem obra
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if abastecimento.comprovante %}
+
+                                    <a
+                                        href="{{ url_for('static', filename=abastecimento.comprovante) }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="btn btn-sm btn-outline-secondary"
+                                    >
+                                        <i class="bi bi-paperclip"></i>
+                                        Abrir
+                                    </a>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Não enviado
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditarAbastecimento{{ abastecimento.id }}"
+                                >
+                                    <i class="bi bi-pencil"></i>
+                                    Editar
+                                </button>
+
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-fuel-pump fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhum abastecimento encontrado
+            </h3>
+
+            <p class="text-muted mb-0">
+                Registre o primeiro abastecimento da frota.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+<!-- MODAL NOVO ABASTECIMENTO -->
+
+<div
+    class="modal fade"
+    id="modalNovoAbastecimento"
+    tabindex="-1"
+    aria-labelledby="modalNovoAbastecimentoTitulo"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('abastecimentos.novo_abastecimento') }}"
+                enctype="multipart/form-data"
+                class="form-abastecimento"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="modalNovoAbastecimentoTitulo"
+                    >
+                        Novo abastecimento
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Data
+                            </label>
+
+                            <input
+                                type="date"
+                                name="data"
+                                class="form-control"
+                                value="{{ hoje }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Hora
+                            </label>
+
+                            <input
+                                type="time"
+                                name="hora"
+                                class="form-control"
+                                value="{{ hora_atual }}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label">
+                                Posto ou fornecedor
+                            </label>
+
+                            <input
+                                type="text"
+                                name="posto"
+                                class="form-control"
+                                maxlength="150"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Veículo
+                            </label>
+
+                            <select
+                                name="veiculo_id"
+                                class="form-select campo-veiculo"
+                                required
+                            >
+                                <option value="">
+                                    Selecione
+                                </option>
+
+                                {% for veiculo in veiculos %}
+                                    <option
+                                        value="{{ veiculo.id }}"
+                                        data-combustivel="{{ veiculo.combustivel or '' }}"
+                                        data-km="{{ veiculo.km_atual }}"
+                                        data-obra-id="{{ veiculo.obra_id or '' }}"
+                                    >
+                                        {{ veiculo.placa }} — {{ veiculo.modelo }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Motorista
+                            </label>
+
+                            <select
+                                name="motorista_id"
+                                class="form-select"
+                                required
+                            >
+                                <option value="">
+                                    Selecione
+                                </option>
+
+                                {% for motorista in motoristas %}
+                                    <option value="{{ motorista.id }}">
+                                        {{ motorista.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Obra ou centro de custo
+                            </label>
+
+                            <select
+                                name="obra_id"
+                                class="form-select campo-obra"
+                            >
+                                <option value="">
+                                    Sem obra vinculada
+                                </option>
+
+                                {% for obra in obras %}
+                                    <option value="{{ obra.id }}">
+                                        {{ obra.codigo }} — {{ obra.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Combustível
+                            </label>
+
+                            <select
+                                name="combustivel"
+                                class="form-select campo-combustivel"
+                                required
+                            >
+                                <option value="">
+                                    Selecione
+                                </option>
+
+                                {% for combustivel in [
+                                    "Gasolina",
+                                    "Etanol",
+                                    "Diesel",
+                                    "Diesel S10",
+                                    "Diesel S500",
+                                    "GNV",
+                                    "Elétrico",
+                                    "Outro"
+                                ] %}
+                                    <option value="{{ combustivel }}">
+                                        {{ combustivel }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+
+                            <label class="form-label">
+                                Litros
+                            </label>
+
+                            <input
+                                type="number"
+                                name="litros"
+                                class="form-control campo-litros"
+                                min="0.001"
+                                step="0.001"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+
+                            <label class="form-label">
+                                Valor por litro
+                            </label>
+
+                            <input
+                                type="number"
+                                name="valor_litro"
+                                class="form-control campo-valor-litro"
+                                min="0.001"
+                                step="0.001"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+
+                            <label class="form-label">
+                                Valor total
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control campo-valor-total"
+                                value="R$ 0,00"
+                                readonly
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Quilometragem
+                            </label>
+
+                            <input
+                                type="number"
+                                name="km"
+                                class="form-control campo-km"
+                                min="0"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Número da nota
+                            </label>
+
+                            <input
+                                type="text"
+                                name="numero_nota"
+                                class="form-control"
+                                maxlength="80"
+                            >
+
+                        </div>
+
+                        <div class="col-md-5 mb-3">
+
+                            <label class="form-label">
+                                Comprovante
+                            </label>
+
+                            <input
+                                type="file"
+                                name="comprovante"
+                                class="form-control"
+                                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                            >
+
+                            <div class="form-text">
+                                JPG, PNG, WEBP ou PDF, até 8 MB.
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-3 mb-3 d-flex align-items-center">
+
+                            <div class="form-check mt-4">
+
+                                <input
+                                    type="checkbox"
+                                    id="tanqueCheioNovo"
+                                    name="tanque_cheio"
+                                    class="form-check-input"
+                                >
+
+                                <label
+                                    for="tanqueCheioNovo"
+                                    class="form-check-label"
+                                >
+                                    Tanque cheio
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Observações
+                        </label>
+
+                        <textarea
+                            name="observacoes"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1500"
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar abastecimento
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
     </div>
 </div>
+
+<!-- MODAIS DE EDIÇÃO -->
+
+{% for abastecimento in abastecimentos %}
+
+<div
+    class="modal fade"
+    id="modalEditarAbastecimento{{ abastecimento.id }}"
+    tabindex="-1"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-xl">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'abastecimentos.editar_abastecimento',
+                    abastecimento_id=abastecimento.id
+                ) }}"
+                enctype="multipart/form-data"
+                class="form-abastecimento"
+            >
+
+                <div class="modal-header">
+
+                    <h5 class="modal-title">
+                        Editar abastecimento
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Data
+                            </label>
+
+                            <input
+                                type="date"
+                                name="data"
+                                class="form-control"
+                                value="{{ abastecimento.data.strftime('%Y-%m-%d') }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Hora
+                            </label>
+
+                            <input
+                                type="time"
+                                name="hora"
+                                class="form-control"
+                                value="{% if abastecimento.hora %}{{ abastecimento.hora.strftime('%H:%M') }}{% endif %}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label">
+                                Posto ou fornecedor
+                            </label>
+
+                            <input
+                                type="text"
+                                name="posto"
+                                class="form-control"
+                                maxlength="150"
+                                value="{{ abastecimento.posto }}"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Veículo
+                            </label>
+
+                            <select
+                                name="veiculo_id"
+                                class="form-select campo-veiculo"
+                                required
+                            >
+                                {% for veiculo in veiculos %}
+                                    <option
+                                        value="{{ veiculo.id }}"
+                                        data-combustivel="{{ veiculo.combustivel or '' }}"
+                                        data-km="{{ veiculo.km_atual }}"
+                                        data-obra-id="{{ veiculo.obra_id or '' }}"
+                                        {% if abastecimento.veiculo_id == veiculo.id %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ veiculo.placa }} — {{ veiculo.modelo }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Motorista
+                            </label>
+
+                            <select
+                                name="motorista_id"
+                                class="form-select"
+                                required
+                            >
+                                {% for motorista in motoristas %}
+                                    <option
+                                        value="{{ motorista.id }}"
+                                        {% if abastecimento.motorista_id == motorista.id %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ motorista.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Obra ou centro de custo
+                            </label>
+
+                            <select
+                                name="obra_id"
+                                class="form-select campo-obra"
+                            >
+                                <option value="">
+                                    Sem obra vinculada
+                                </option>
+
+                                {% for obra in obras %}
+                                    <option
+                                        value="{{ obra.id }}"
+                                        {% if abastecimento.obra_id == obra.id %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ obra.codigo }} — {{ obra.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Combustível
+                            </label>
+
+                            <select
+                                name="combustivel"
+                                class="form-select campo-combustivel"
+                                required
+                            >
+                                {% for combustivel in [
+                                    "Gasolina",
+                                    "Etanol",
+                                    "Diesel",
+                                    "Diesel S10",
+                                    "Diesel S500",
+                                    "GNV",
+                                    "Elétrico",
+                                    "Outro"
+                                ] %}
+                                    <option
+                                        value="{{ combustivel }}"
+                                        {% if abastecimento.combustivel == combustivel %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ combustivel }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+
+                            <label class="form-label">
+                                Litros
+                            </label>
+
+                            <input
+                                type="number"
+                                name="litros"
+                                class="form-control campo-litros"
+                                min="0.001"
+                                step="0.001"
+                                value="{{ abastecimento.litros }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+
+                            <label class="form-label">
+                                Valor por litro
+                            </label>
+
+                            <input
+                                type="number"
+                                name="valor_litro"
+                                class="form-control campo-valor-litro"
+                                min="0.001"
+                                step="0.001"
+                                value="{{ abastecimento.valor_litro }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-2 mb-3">
+
+                            <label class="form-label">
+                                Valor total
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control campo-valor-total"
+                                readonly
+                            >
+
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+
+                            <label class="form-label">
+                                Quilometragem
+                            </label>
+
+                            <input
+                                type="number"
+                                name="km"
+                                class="form-control campo-km"
+                                min="0"
+                                value="{{ abastecimento.km }}"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            <label class="form-label">
+                                Número da nota
+                            </label>
+
+                            <input
+                                type="text"
+                                name="numero_nota"
+                                class="form-control"
+                                maxlength="80"
+                                value="{{ abastecimento.numero_nota or '' }}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-5 mb-3">
+
+                            <label class="form-label">
+                                Novo comprovante
+                            </label>
+
+                            <input
+                                type="file"
+                                name="comprovante"
+                                class="form-control"
+                                accept=".jpg,.jpeg,.png,.webp,.pdf"
+                            >
+
+                            <div class="form-text">
+                                Deixe vazio para manter o arquivo atual.
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-3 mb-3 d-flex align-items-center">
+
+                            <div class="form-check mt-4">
+
+                                <input
+                                    type="checkbox"
+                                    id="tanqueCheioEditar{{ abastecimento.id }}"
+                                    name="tanque_cheio"
+                                    class="form-check-input"
+                                    {% if abastecimento.tanque_cheio %}
+                                        checked
+                                    {% endif %}
+                                >
+
+                                <label
+                                    for="tanqueCheioEditar{{ abastecimento.id }}"
+                                    class="form-check-label"
+                                >
+                                    Tanque cheio
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">
+                            Observações
+                        </label>
+
+                        <textarea
+                            name="observacoes"
+                            class="form-control"
+                            rows="3"
+                            maxlength="1500"
+                        >{{ abastecimento.observacoes or '' }}</textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar alterações
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% endfor %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    function converterNumero(valor) {
+        const texto = String(valor || "").trim();
+
+        if (!texto) {
+            return 0;
+        }
+
+        /*
+         * Campos type="number" normalmente entregam:
+         * 7.50
+         *
+         * Campos formatados manualmente podem entregar:
+         * 7,50
+         * 1.250,50
+         */
+        if (texto.includes(",")) {
+            return Number(
+                texto
+                    .replace(/\./g, "")
+                    .replace(",", ".")
+            ) || 0;
+        }
+
+        return Number(texto) || 0;
+    }
+
+    function formatarDinheiro(valor) {
+        return valor.toLocaleString(
+            "pt-BR",
+            {
+                style: "currency",
+                currency: "BRL",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+    }
+
+    document
+        .querySelectorAll(".form-abastecimento")
+        .forEach(function (formulario) {
+
+            const campoVeiculo = formulario.querySelector(
+                ".campo-veiculo"
+            );
+
+            const campoCombustivel = formulario.querySelector(
+                ".campo-combustivel"
+            );
+
+            const campoObra = formulario.querySelector(
+                ".campo-obra"
+            );
+
+            const campoKm = formulario.querySelector(
+                ".campo-km"
+            );
+
+            const campoLitros = formulario.querySelector(
+                ".campo-litros"
+            );
+
+            const campoValorLitro = formulario.querySelector(
+                ".campo-valor-litro"
+            );
+
+            const campoValorTotal = formulario.querySelector(
+                ".campo-valor-total"
+            );
+
+            function calcularTotal() {
+                const litros = converterNumero(
+                    campoLitros
+                        ? campoLitros.value
+                        : 0
+                );
+
+                const valorLitro = converterNumero(
+                    campoValorLitro
+                        ? campoValorLitro.value
+                        : 0
+                );
+
+                const total = litros * valorLitro;
+
+                if (campoValorTotal) {
+                    campoValorTotal.value = formatarDinheiro(
+                        total
+                    );
+                }
+            }
+
+            function preencherDadosVeiculo() {
+                if (!campoVeiculo) {
+                    return;
+                }
+
+                const opcao = campoVeiculo.options[
+                    campoVeiculo.selectedIndex
+                ];
+
+                if (!opcao || !opcao.value) {
+                    return;
+                }
+
+                const combustivel = (
+                    opcao.dataset.combustivel
+                    || ""
+                );
+
+                const km = (
+                    opcao.dataset.km
+                    || ""
+                );
+
+                const obraId = (
+                    opcao.dataset.obraId
+                    || ""
+                );
+
+                if (
+                    campoCombustivel
+                    && !campoCombustivel.value
+                    && combustivel
+                ) {
+                    const opcaoCombustivel = Array.from(
+                        campoCombustivel.options
+                    ).find(function (item) {
+                        return item.value === combustivel;
+                    });
+
+                    if (opcaoCombustivel) {
+                        campoCombustivel.value = combustivel;
+                    }
+                }
+
+                if (
+                    campoKm
+                    && !campoKm.value
+                ) {
+                    campoKm.value = km;
+                }
+
+                if (
+                    campoObra
+                    && !campoObra.value
+                    && obraId
+                ) {
+                    campoObra.value = obraId;
+                }
+            }
+
+            if (campoVeiculo) {
+                campoVeiculo.addEventListener(
+                    "change",
+                    preencherDadosVeiculo
+                );
+            }
+
+            if (campoLitros) {
+                campoLitros.addEventListener(
+                    "input",
+                    calcularTotal
+                );
+
+                campoLitros.addEventListener(
+                    "change",
+                    calcularTotal
+                );
+            }
+
+            if (campoValorLitro) {
+                campoValorLitro.addEventListener(
+                    "input",
+                    calcularTotal
+                );
+
+                campoValorLitro.addEventListener(
+                    "change",
+                    calcularTotal
+                );
+            }
+
+            calcularTotal();
+
+        });
+
+});
+</script>
+
 {% endblock %}

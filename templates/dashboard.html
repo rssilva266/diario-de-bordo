@@ -1,79 +1,111 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
+
+{% block titulo %}
+<div>
+    <h1 class="page-title mb-1">Dashboard</h1>
+
+    {% if empresa %}
+        <p class="text-muted mb-0">
+            {{ empresa.nome_fantasia or empresa.razao_social }}
+            · Plano {{ empresa.plano.nome }}
+        </p>
+    {% endif %}
+</div>
+{% endblock %}
 
 {% block conteudo %}
+<div class="row g-3">
 
-<h2 class="mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="dashboard-card">
 
-Dashboard
+            <div class="dashboard-card-top">
+                <h3 class="dashboard-card-title">
+                    <i class="bi bi-truck dashboard-card-icon icon-blue"></i>
+                    Veículos
+                </h3>
+            </div>
 
-</h2>
+            <div class="dashboard-card-value">
+                {{ total_veiculos }}
+            </div>
 
-<div class="row">
+            <p class="dashboard-card-subtitle">
+                {% if empresa %}
+                    {{ total_veiculos }}
+                    de
+                    {{ empresa.plano.limite_veiculos }}
+                    permitidos no plano
+                {% else %}
+                    Nenhuma empresa cadastrada
+                {% endif %}
+            </p>
 
-<div class="col-md-3">
+        </div>
+    </div>
 
-<div class="card">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="dashboard-card">
 
-<div class="card-body">
+            <div class="dashboard-card-top">
+                <h3 class="dashboard-card-title">
+                    <i class="bi bi-person-badge dashboard-card-icon icon-indigo"></i>
+                    Motoristas
+                </h3>
+            </div>
 
-<h5>🚗 Veículos</h5>
+            <div class="dashboard-card-value">
+                {{ total_motoristas }}
+            </div>
 
-<h2>0</h2>
+            <p class="dashboard-card-subtitle">
+                Total de motoristas cadastrados
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-top">
+                <h3 class="dashboard-card-title">
+                    <i class="bi bi-fuel-pump dashboard-card-icon icon-red"></i>
+                    Abastecimentos
+                </h3>
+            </div>
+
+            <div class="dashboard-card-value">
+                {{ total_abastecimentos }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Registros de abastecimento
+            </p>
+
+        </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="dashboard-card">
+
+            <div class="dashboard-card-top">
+                <h3 class="dashboard-card-title">
+                    <i class="bi bi-journal-text dashboard-card-icon icon-slate"></i>
+                    Diários
+                </h3>
+            </div>
+
+            <div class="dashboard-card-value">
+                {{ total_diarios }}
+            </div>
+
+            <p class="dashboard-card-subtitle">
+                Diários de bordo registrados
+            </p>
+
+        </div>
+    </div>
 
 </div>
-
-</div>
-
-</div>
-
-<div class="col-md-3">
-
-<div class="card">
-
-<div class="card-body">
-
-<h5>👤 Motoristas</h5>
-
-<h2>0</h2>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-md-3">
-
-<div class="card">
-
-<div class="card-body">
-
-<h5>⛽ Abastecimentos</h5>
-
-<h2>0</h2>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-md-3">
-
-<div class="card">
-
-<div class="card-body">
-
-<h5>📄 Diários</h5>
-
-<h2>0</h2>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
 {% endblock %}

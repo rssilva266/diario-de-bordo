@@ -1,91 +1,429 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
 
 {% block titulo %}
-<div class="d-flex justify-content-between align-items-center">
-    <h1>Veículos</h1>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoVeiculo">
-        + Novo Veículo
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Veículos
+        </h1>
+
+        {% if empresa %}
+            <p class="text-muted mb-0">
+                {{ total_veiculos }}
+                de
+                {{ empresa.plano.limite_veiculos }}
+                veículos utilizados no plano
+                {{ empresa.plano.nome }}
+            </p>
+        {% endif %}
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNovoVeiculo"
+        {% if not empresa %}disabled{% endif %}
+    >
+        <i class="bi bi-plus-lg me-1"></i>
+        Novo veículo
     </button>
+
 </div>
 {% endblock %}
 
 {% block conteudo %}
 
-<div class="card">
-    <div class="card-body">
+{% with mensagens = get_flashed_messages(with_categories=true) %}
+    {% if mensagens %}
 
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Placa</th>
-                    <th>Modelo</th>
-                    <th>Ano</th>
-                    <th>Combustível</th>
-                    <th>KM Atual</th>
-                </tr>
-            </thead>
+        {% for categoria, mensagem in mensagens %}
+            <div
+                class="alert alert-{{ categoria }} alert-dismissible fade show"
+                role="alert"
+            >
+                {{ mensagem }}
 
-            <tbody>
-                {% for v in veiculos %}
-                <tr>
-                    <td>{{ v[0] }}</td>
-                    <td>{{ v[1] }}</td>
-                    <td>{{ v[2] }}</td>
-                    <td>{{ v[3] }}</td>
-                    <td>{{ v[4] }}</td>
-                    <td>{{ v[5] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Fechar"
+                ></button>
+            </div>
+        {% endfor %}
 
-    </div>
+    {% endif %}
+{% endwith %}
+
+<div class="section-card">
+
+    {% if veiculos %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Placa</th>
+                        <th>Modelo</th>
+                        <th>Ano</th>
+                        <th>Combustível</th>
+                        <th>KM atual</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for veiculo in veiculos %}
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ veiculo.placa }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ veiculo.modelo }}
+                            </td>
+
+                            <td>
+                                {{ veiculo.ano or "—" }}
+                            </td>
+
+                            <td>
+                                {{ veiculo.combustivel or "—" }}
+                            </td>
+
+                            <td>
+                                {{ veiculo.km_atual }} km
+                            </td>
+
+                            <td>
+                                {% if veiculo.status == "Ativo" %}
+                                    <span class="badge text-bg-success">
+                                        Ativo
+                                    </span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">
+                                        {{ veiculo.status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-truck fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhum veículo cadastrado
+            </h3>
+
+            <p class="text-muted mb-0">
+                Cadastre o primeiro veículo da empresa.
+            </p>
+
+        </div>
+
+    {% endif %}
+
 </div>
 
-<div class="modal fade" id="modalNovoVeiculo" tabindex="-1">
+<div
+    class="modal fade"
+    id="modalNovoVeiculo"
+    tabindex="-1"
+    aria-labelledby="modalNovoVeiculoTitulo"
+    aria-hidden="true"
+>
     <div class="modal-dialog">
+
         <div class="modal-content">
 
-            <form method="POST" action="/veiculos/novo">
+            <form
+                method="POST"
+                action="{{ url_for('veiculos.novo_veiculo') }}"
+                id="formNovoVeiculo"
+            >
 
                 <div class="modal-header">
-                    <h5 class="modal-title">Novo Veículo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                    <h5
+                        class="modal-title"
+                        id="modalNovoVeiculoTitulo"
+                    >
+                        Novo veículo
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
                 </div>
 
                 <div class="modal-body">
 
-                    <label>Placa</label>
-                    <input type="text" name="placa" class="form-control mb-3" required>
+                    <div class="mb-3">
 
-                    <label>Modelo</label>
-                    <input type="text" name="modelo" class="form-control mb-3" required>
+                        <label
+                            for="placa"
+                            class="form-label"
+                        >
+                            Placa
+                        </label>
 
-                    <label>Ano</label>
-                    <input type="number" name="ano" class="form-control mb-3">
+                        <input
+                            type="text"
+                            id="placa"
+                            name="placa"
+                            class="form-control text-uppercase"
+                            maxlength="8"
+                            placeholder="ABC-1234 ou ABC-1D23"
+                            autocomplete="off"
+                            spellcheck="false"
+                            required
+                        >
 
-                    <label>Combustível</label>
-                    <select name="combustivel" class="form-control mb-3">
-                        <option>Gasolina</option>
-                        <option>Diesel</option>
-                        <option>Flex</option>
-                        <option>Etanol</option>
-                    </select>
+                        <div class="form-text">
+                            Formatos aceitos: ABC-1234 ou ABC-1D23.
+                        </div>
 
-                    <label>KM Atual</label>
-                    <input type="number" name="km_atual" class="form-control mb-3" value="0">
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="modelo"
+                            class="form-label"
+                        >
+                            Modelo
+                        </label>
+
+                        <input
+                            type="text"
+                            id="modelo"
+                            name="modelo"
+                            class="form-control"
+                            placeholder="Ex.: Toyota Hilux"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="ano"
+                                class="form-label"
+                            >
+                                Ano
+                            </label>
+
+                            <input
+                                type="number"
+                                id="ano"
+                                name="ano"
+                                class="form-control"
+                                min="1900"
+                                max="2100"
+                            >
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="km_atual"
+                                class="form-label"
+                            >
+                                KM atual
+                            </label>
+
+                            <input
+                                type="number"
+                                id="km_atual"
+                                name="km_atual"
+                                class="form-control"
+                                min="0"
+                                value="0"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="combustivel"
+                            class="form-label"
+                        >
+                            Combustível
+                        </label>
+
+                        <select
+                            id="combustivel"
+                            name="combustivel"
+                            class="form-select"
+                        >
+                            <option value="">
+                                Selecione
+                            </option>
+
+                            <option value="Gasolina">
+                                Gasolina
+                            </option>
+
+                            <option value="Diesel">
+                                Diesel
+                            </option>
+
+                            <option value="Flex">
+                                Flex
+                            </option>
+
+                            <option value="Etanol">
+                                Etanol
+                            </option>
+
+                            <option value="Elétrico">
+                                Elétrico
+                            </option>
+
+                            <option value="Híbrido">
+                                Híbrido
+                            </option>
+                        </select>
+
+                    </div>
 
                 </div>
 
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Salvar</button>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar veículo
+                    </button>
+
                 </div>
 
             </form>
 
         </div>
+
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const campoPlaca = document.getElementById("placa");
+    const formulario = document.getElementById("formNovoVeiculo");
+
+    if (!campoPlaca || !formulario) {
+        return;
+    }
+
+    function formatarPlaca(valor) {
+        const placaLimpa = valor
+            .toUpperCase()
+            .replace(/[^A-Z0-9]/g, "")
+            .slice(0, 7);
+
+        if (placaLimpa.length <= 3) {
+            return placaLimpa;
+        }
+
+        return (
+            placaLimpa.slice(0, 3)
+            + "-"
+            + placaLimpa.slice(3)
+        );
+    }
+
+    function placaValida(placa) {
+        const placaAntiga = /^[A-Z]{3}-\d{4}$/;
+        const placaMercosul = /^[A-Z]{3}-\d[A-Z]\d{2}$/;
+
+        return (
+            placaAntiga.test(placa)
+            || placaMercosul.test(placa)
+        );
+    }
+
+    campoPlaca.addEventListener("input", function () {
+        campoPlaca.value = formatarPlaca(
+            campoPlaca.value
+        );
+
+        campoPlaca.setCustomValidity("");
+    });
+
+    campoPlaca.addEventListener("blur", function () {
+        if (
+            campoPlaca.value
+            && !placaValida(campoPlaca.value)
+        ) {
+            campoPlaca.setCustomValidity(
+                "Informe uma placa válida: ABC-1234 ou ABC-1D23."
+            );
+        } else {
+            campoPlaca.setCustomValidity("");
+        }
+    });
+
+    formulario.addEventListener("submit", function (event) {
+        campoPlaca.value = formatarPlaca(
+            campoPlaca.value
+        );
+
+        if (!placaValida(campoPlaca.value)) {
+            event.preventDefault();
+
+            campoPlaca.setCustomValidity(
+                "Informe uma placa válida: ABC-1234 ou ABC-1D23."
+            );
+
+            campoPlaca.reportValidity();
+            campoPlaca.focus();
+
+            return;
+        }
+
+        campoPlaca.setCustomValidity("");
+    });
+});
+</script>
 
 {% endblock %}

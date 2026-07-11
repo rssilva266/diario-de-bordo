@@ -1,0 +1,1 @@
+"""Pacote responsável pelos modelos e pela inicialização do banco de dados."""
