@@ -121,23 +121,25 @@
 
                     <li class="nav-header">MÓDULOS</li>
 
-                    <li class="nav-item {% if request.path.startswith('/veiculos') or request.path.startswith('/motoristas') or request.path.startswith('/obras') or request.path.startswith('/cadastros/usuarios') %}menu-open{% endif %}">
-                        <a href="#" class="nav-link {% if request.path.startswith('/veiculos') or request.path.startswith('/motoristas') or request.path.startswith('/obras') or request.path.startswith('/cadastros/usuarios') %}active{% endif %}">
+                    <li class="nav-item {% if request.path.startswith('/veiculos') or request.path.startswith('/motoristas') or request.path.startswith('/obras') or request.path.startswith('/cadastros/usuarios') or request.path.startswith('/cadastros/colaboradores') or request.path.startswith('/cadastros/locais-trabalho') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if request.path.startswith('/veiculos') or request.path.startswith('/motoristas') or request.path.startswith('/obras') or request.path.startswith('/cadastros/usuarios') or request.path.startswith('/cadastros/colaboradores') or request.path.startswith('/cadastros/locais-trabalho') %}active{% endif %}">
                             <i class="nav-icon bi bi-folder2-open"></i>
                             <p>Cadastros <i class="nav-arrow bi bi-chevron-right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item"><a href="/veiculos" class="nav-link {% if request.path.startswith('/veiculos') %}active{% endif %}"><i class="nav-icon bi bi-truck"></i><p>Veículos</p></a></li>
-                            <li class="nav-item"><a href="/motoristas" class="nav-link {% if request.path.startswith('/motoristas') %}active{% endif %}"><i class="nav-icon bi bi-people"></i><p>Colaboradores</p></a></li>
+                            <li class="nav-item"><a href="/motoristas" class="nav-link {% if request.path.startswith('/motoristas') %}active{% endif %}"><i class="nav-icon bi bi-person-badge"></i><p>Motoristas</p></a></li>
                             <li class="nav-item"><a href="/obras" class="nav-link {% if request.path.startswith('/obras') %}active{% endif %}"><i class="nav-icon bi bi-building"></i><p>Obras</p></a></li>
                             {% if (current_user.perfil or '')|lower == 'administrador' %}
+                            <li class="nav-item"><a href="{{ url_for('ponto.colaboradores') }}" class="nav-link {% if request.path.startswith('/cadastros/colaboradores') %}active{% endif %}"><i class="nav-icon bi bi-people"></i><p>Colaboradores</p></a></li>
+                            <li class="nav-item"><a href="{{ url_for('ponto.locais_trabalho') }}" class="nav-link {% if request.path.startswith('/cadastros/locais-trabalho') %}active{% endif %}"><i class="nav-icon bi bi-geo-alt"></i><p>Locais de Trabalho</p></a></li>
                             <li class="nav-item"><a href="{{ url_for('usuarios.listar_usuarios') }}" class="nav-link {% if request.path.startswith('/cadastros/usuarios') %}active{% endif %}"><i class="nav-icon bi bi-person-gear"></i><p>Usuários</p></a></li>
                             {% endif %}
                         </ul>
                     </li>
 
-                    <li class="nav-item {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') %}menu-open{% endif %}">
-                        <a href="#" class="nav-link {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') %}active{% endif %}">
+                    <li class="nav-item {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') or request.path.startswith('/ponto-eletronico') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') or request.path.startswith('/ponto-eletronico') %}active{% endif %}">
                             <i class="nav-icon bi bi-gear-wide-connected"></i>
                             <p>Operações <i class="nav-arrow bi bi-chevron-right"></i></p>
                         </a>
@@ -145,6 +147,8 @@
                             <li class="nav-item"><a href="/abastecimentos" class="nav-link {% if request.path.startswith('/abastecimentos') %}active{% endif %}"><i class="nav-icon bi bi-fuel-pump"></i><p>Abastecimentos</p></a></li>
                             <li class="nav-item"><a href="/manutencoes" class="nav-link {% if request.path.startswith('/manutencoes') %}active{% endif %}"><i class="nav-icon bi bi-tools"></i><p>Manutenções</p></a></li>
                             <li class="nav-item"><a href="/diario" class="nav-link {% if request.path.startswith('/diario') %}active{% endif %}"><i class="nav-icon bi bi-journal-text"></i><p>Diário de Bordo</p></a></li>
+                            <li class="nav-item"><a href="{{ url_for('ponto.coleta') }}" class="nav-link {% if request.path == '/ponto-eletronico' %}active{% endif %}"><i class="nav-icon bi bi-clock-history"></i><p>Ponto Eletrônico</p></a></li>
+                            <li class="nav-item"><a href="{{ url_for('ponto.gestao') }}" class="nav-link {% if request.path.startswith('/ponto-eletronico/gestao') %}active{% endif %}"><i class="nav-icon bi bi-calendar-check"></i><p>Gestão do Ponto</p></a></li>
                         </ul>
                     </li>
 

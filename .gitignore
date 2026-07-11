@@ -1,16 +1,11 @@
 venv/
 __pycache__/
-*.pyc
-database.db
-instance/
+*.py[cod]
 .env
-.DS_Storedatabase/*.db
+.DS_Store
+instance/
+database/*.db
 database/*backup*.db
 static/uploads/
-.env
-*.py[cod]
-database/*.db
-
-# Backups gerados pelo sistema
 backups/*.zip
 backups/restore_*/

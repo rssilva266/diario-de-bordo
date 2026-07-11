@@ -1044,3 +1044,127 @@ class Manutencao(db.Model):
         "Usuario",
         back_populates="manutencoes",
     )
+
+class Colaborador(db.Model):
+    __tablename__ = "colaboradores"
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "empresa_id",
+            "matricula",
+            name="uq_colaborador_empresa_matricula",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(150), nullable=False)
+    matricula = db.Column(db.String(50), nullable=False)
+    cpf = db.Column(db.String(14), nullable=True)
+    funcao = db.Column(db.String(100), nullable=True)
+    telefone = db.Column(db.String(30), nullable=True)
+    jornada_diaria_minutos = db.Column(db.Integer, nullable=False, default=480)
+    ativo = db.Column(db.Boolean, nullable=False, default=True)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    empresa_id = db.Column(
+        db.Integer,
+        db.ForeignKey("empresas.id"),
+        nullable=False,
+    )
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey("usuarios.id"),
+        nullable=True,
+        unique=True,
+    )
+    local_trabalho_id = db.Column(
+        db.Integer,
+        db.ForeignKey("locais_trabalho.id"),
+        nullable=True,
+    )
+
+    empresa = db.relationship("Empresa", foreign_keys=[empresa_id])
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+    local_trabalho = db.relationship("LocalTrabalho", back_populates="colaboradores")
+    marcacoes = db.relationship(
+        "PontoMarcacao",
+        back_populates="colaborador",
+        cascade="all, delete-orphan",
+        lazy=True,
+    )
+
+
+class LocalTrabalho(db.Model):
+    __tablename__ = "locais_trabalho"
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "empresa_id",
+            "nome",
+            name="uq_local_trabalho_empresa_nome",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(150), nullable=False)
+    endereco = db.Column(db.String(250), nullable=True)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    raio_metros = db.Column(db.Integer, nullable=False, default=200)
+    ativo = db.Column(db.Boolean, nullable=False, default=True)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    empresa_id = db.Column(
+        db.Integer,
+        db.ForeignKey("empresas.id"),
+        nullable=False,
+    )
+
+    empresa = db.relationship("Empresa", foreign_keys=[empresa_id])
+    colaboradores = db.relationship(
+        "Colaborador",
+        back_populates="local_trabalho",
+        lazy=True,
+    )
+
+
+class PontoMarcacao(db.Model):
+    __tablename__ = "ponto_marcacoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_uuid = db.Column(db.String(80), nullable=False, unique=True, index=True)
+    tipo = db.Column(db.String(30), nullable=False)
+    capturado_em = db.Column(db.DateTime, nullable=False)
+    recebido_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    precisao_metros = db.Column(db.Float, nullable=True)
+    distancia_local_metros = db.Column(db.Float, nullable=True)
+    dentro_geocerca = db.Column(db.Boolean, nullable=True)
+    foto_path = db.Column(db.String(500), nullable=False)
+    dispositivo_id = db.Column(db.String(200), nullable=True)
+    dispositivo_info = db.Column(db.String(300), nullable=True)
+    ip_origem = db.Column(db.String(80), nullable=True)
+    status_sincronizacao = db.Column(db.String(30), nullable=False, default="Sincronizado")
+    observacao = db.Column(db.Text, nullable=True)
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    empresa_id = db.Column(
+        db.Integer,
+        db.ForeignKey("empresas.id"),
+        nullable=False,
+    )
+    colaborador_id = db.Column(
+        db.Integer,
+        db.ForeignKey("colaboradores.id"),
+        nullable=False,
+    )
+    local_trabalho_id = db.Column(
+        db.Integer,
+        db.ForeignKey("locais_trabalho.id"),
+        nullable=True,
+    )
+
+    empresa = db.relationship("Empresa", foreign_keys=[empresa_id])
+    colaborador = db.relationship("Colaborador", back_populates="marcacoes")
+    local_trabalho = db.relationship("LocalTrabalho", foreign_keys=[local_trabalho_id])
