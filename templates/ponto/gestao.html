@@ -1,136 +1,514 @@
-{% extends 'layout/base.html' %}
+{% extends "layout/base.html" %}
 
 {% block titulo %}
-<div class="d-flex justify-content-between align-items-center">
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
     <div>
-        <h1>Gestão do Ponto</h1>
-        <small class="text-muted">
-            Marcações recebidas e situação de localização
-        </small>
+        <h1 class="page-title mb-1">
+            Gestão do Ponto
+        </h1>
+
+        <p class="text-muted mb-0">
+            Consulte e corrija as marcações recebidas.
+        </p>
     </div>
 
-    <form class="d-flex gap-2">
+    <form
+        method="GET"
+        class="d-flex gap-2"
+    >
         <input
             class="form-control"
             type="date"
             name="data"
             value="{{ data_filtro.isoformat() }}"
         >
-        <button class="btn btn-primary">Filtrar</button>
+
+        <button
+            type="submit"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-funnel me-1"></i>
+            Filtrar
+        </button>
     </form>
+
 </div>
 {% endblock %}
 
+
 {% block conteudo %}
-<div class="card">
-    <div class="card-body table-responsive">
-        <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>Horário</th>
-                    <th>Colaborador</th>
-                    <th>Tipo</th>
-                    <th>Localização</th>
-                    <th>Precisão</th>
-                    <th>Coordenadas</th>
-                    <th>Foto</th>
-                </tr>
-            </thead>
 
-            <tbody>
-                {% for m in marcacoes %}
-                <tr>
-                    <td>
-                        {{ m.capturado_em.strftime('%d/%m/%Y %H:%M:%S') }}
-                    </td>
+{% with mensagens = get_flashed_messages(with_categories=true) %}
+    {% if mensagens %}
 
-                    <td>
-                        <strong>{{ m.colaborador.nome }}</strong>
-                    </td>
+        {% for categoria, mensagem in mensagens %}
+            <div
+                class="alert alert-{{ categoria }} alert-dismissible fade show"
+                role="alert"
+            >
+                {{ mensagem }}
 
-                    <td>
-                        {{ tipos.get(m.tipo, m.tipo) }}
-                    </td>
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Fechar"
+                ></button>
+            </div>
+        {% endfor %}
 
-                    <td>
-                        {% if m.dentro_geocerca is sameas true %}
-                        <span class="badge bg-success">
-                            Dentro da área
-                        </span>
-                        {% elif m.dentro_geocerca is sameas false %}
-                        <span class="badge bg-danger">
-                            Fora da área
-                            {% if m.distancia_local_metros %}
-                                ·
-                                {% if m.distancia_local_metros >= 1000 %}
-                                    {{ '%.2f'|format(m.distancia_local_metros / 1000) }} km
+    {% endif %}
+{% endwith %}
+
+
+<div class="section-card">
+
+    {% if marcacoes %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Horário</th>
+                        <th>Colaborador</th>
+                        <th>Tipo</th>
+                        <th>Localização</th>
+                        <th>Precisão</th>
+                        <th>Coordenadas</th>
+                        <th>Foto</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for marcacao in marcacoes %}
+                        <tr>
+
+                            <td class="text-nowrap">
+                                <strong>
+                                    {{ marcacao.capturado_em.strftime("%H:%M:%S") }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    {{ marcacao.capturado_em.strftime("%d/%m/%Y") }}
+                                </div>
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ marcacao.colaborador.nome }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    {{ marcacao.colaborador.matricula }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {% if marcacao.tipo == "entrada" %}
+                                    <span class="badge text-bg-primary">
+                                        Entrada
+                                    </span>
+
+                                {% elif marcacao.tipo == "intervalo" %}
+                                    <span class="badge text-bg-warning">
+                                        Início do intervalo
+                                    </span>
+
+                                {% elif marcacao.tipo == "retorno" %}
+                                    <span class="badge text-bg-info">
+                                        Retorno do intervalo
+                                    </span>
+
+                                {% elif marcacao.tipo == "saida" %}
+                                    <span class="badge text-bg-secondary">
+                                        Saída
+                                    </span>
+
                                 {% else %}
-                                    {{ '%.0f'|format(m.distancia_local_metros) }} m
+                                    <span class="badge text-bg-light border">
+                                        {{ tipos.get(
+                                            marcacao.tipo,
+                                            marcacao.tipo
+                                        ) }}
+                                    </span>
                                 {% endif %}
-                            {% endif %}
-                        </span>
-                        {% else %}
-                        <span class="badge bg-secondary">
-                            Não validado
-                        </span>
-                        {% endif %}
-                    </td>
+                            </td>
 
-                    <td>
-                        {{ '%.0f m'|format(m.precisao_metros)
-                           if m.precisao_metros is not none
-                           else '-' }}
-                    </td>
+                            <td>
+                                {% if marcacao.dentro_geocerca is sameas true %}
 
-                    <td>
-                        {% if m.latitude is not none and m.longitude is not none %}
-                        <div class="small text-nowrap">
-                            {{ '%.6f'|format(m.latitude) }},
-                            {{ '%.6f'|format(m.longitude) }}
+                                    <span class="badge text-bg-success">
+                                        Dentro da área
+                                    </span>
+
+                                {% elif marcacao.dentro_geocerca is sameas false %}
+
+                                    <span class="badge text-bg-danger">
+                                        Fora da área
+                                    </span>
+
+                                    {% if marcacao.distancia_local_metros is not none %}
+                                        <div class="small text-muted mt-1">
+
+                                            {% if marcacao.distancia_local_metros >= 1000 %}
+                                                {{ "%.2f"|format(
+                                                    marcacao.distancia_local_metros / 1000
+                                                ) }} km
+                                            {% else %}
+                                                {{ "%.0f"|format(
+                                                    marcacao.distancia_local_metros
+                                                ) }} m
+                                            {% endif %}
+
+                                        </div>
+                                    {% endif %}
+
+                                {% else %}
+
+                                    <span class="badge text-bg-secondary">
+                                        Não validado
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if marcacao.precisao_metros is not none %}
+                                    {{ "%.0f"|format(
+                                        marcacao.precisao_metros
+                                    ) }} m
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if (
+                                    marcacao.latitude is not none
+                                    and marcacao.longitude is not none
+                                ) %}
+
+                                    <div class="small text-nowrap">
+                                        {{ "%.6f"|format(marcacao.latitude) }},
+                                        {{ "%.6f"|format(marcacao.longitude) }}
+                                    </div>
+
+                                    <a
+                                        class="btn btn-sm btn-outline-success mt-1"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        href="https://www.google.com/maps?q={{ marcacao.latitude }},{{ marcacao.longitude }}"
+                                    >
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        Mapa
+                                    </a>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Não informadas
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if marcacao.foto_path %}
+
+                                    <a
+                                        class="btn btn-sm btn-outline-primary"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        href="{{ url_for(
+                                            'static',
+                                            filename=marcacao.foto_path
+                                        ) }}"
+                                    >
+                                        <i class="bi bi-image me-1"></i>
+                                        Ver
+                                    </a>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Sem foto
+                                    </span>
+
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+
+                                {% if (
+                                    current_user.perfil
+                                    and current_user.perfil|lower == "administrador"
+                                ) %}
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editarMarcacao{{ marcacao.id }}"
+                                    >
+                                        <i class="bi bi-pencil-square me-1"></i>
+                                        Editar
+                                    </button>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-clock-history fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhuma marcação encontrada
+            </h3>
+
+            <p class="text-muted mb-0">
+                Não existem registros para a data selecionada.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+{% if (
+    current_user.perfil
+    and current_user.perfil|lower == "administrador"
+) %}
+
+    {% for marcacao in marcacoes %}
+
+        <div
+            class="modal fade"
+            id="editarMarcacao{{ marcacao.id }}"
+            tabindex="-1"
+            aria-labelledby="editarMarcacaoTitulo{{ marcacao.id }}"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-lg">
+
+                <div class="modal-content">
+
+                    <form
+                        method="POST"
+                        action="{{ url_for(
+                            'ponto.editar_marcacao_ponto',
+                            marcacao_id=marcacao.id
+                        ) }}"
+                    >
+
+                        <div class="modal-header">
+
+                            <div>
+                                <h5
+                                    class="modal-title"
+                                    id="editarMarcacaoTitulo{{ marcacao.id }}"
+                                >
+                                    Corrigir marcação
+                                </h5>
+
+                                <small class="text-muted">
+                                    {{ marcacao.colaborador.nome }}
+                                </small>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+
                         </div>
 
-                        <a
-                            class="btn btn-sm btn-outline-success mt-1"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            href="https://www.google.com/maps?q={{ m.latitude }},{{ m.longitude }}"
-                        >
-                            <i class="bi bi-geo-alt"></i>
-                            Ver no mapa
-                        </a>
-                        {% else %}
-                        <span class="text-muted">Não informadas</span>
-                        {% endif %}
-                    </td>
+                        <div class="modal-body">
 
-                    <td>
-                        {% if m.foto_path %}
-                        <a
-                            class="btn btn-sm btn-outline-primary"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            href="{{ url_for('static', filename=m.foto_path) }}"
-                        >
-                            <i class="bi bi-image"></i>
-                            Ver
-                        </a>
-                        {% else %}
-                        <span class="text-muted">Sem foto</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td
-                        colspan="7"
-                        class="text-center text-muted py-4"
-                    >
-                        Nenhuma marcação no período.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+                            <div class="alert alert-warning">
+
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+
+                                A fotografia, o GPS, o dispositivo e o IP originais
+                                permanecerão vinculados à marcação.
+
+                            </div>
+
+                            <div class="row g-3">
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        for="tipoMarcacao{{ marcacao.id }}"
+                                        class="form-label"
+                                    >
+                                        Tipo da marcação
+                                    </label>
+
+                                    <select
+                                        id="tipoMarcacao{{ marcacao.id }}"
+                                        name="tipo"
+                                        class="form-select"
+                                        required
+                                    >
+                                        <option
+                                            value="entrada"
+                                            {% if marcacao.tipo == "entrada" %}selected{% endif %}
+                                        >
+                                            Entrada
+                                        </option>
+
+                                        <option
+                                            value="intervalo"
+                                            {% if marcacao.tipo == "intervalo" %}selected{% endif %}
+                                        >
+                                            Início do intervalo
+                                        </option>
+
+                                        <option
+                                            value="retorno"
+                                            {% if marcacao.tipo == "retorno" %}selected{% endif %}
+                                        >
+                                            Retorno do intervalo
+                                        </option>
+
+                                        <option
+                                            value="saida"
+                                            {% if marcacao.tipo == "saida" %}selected{% endif %}
+                                        >
+                                            Saída
+                                        </option>
+                                    </select>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <label
+                                        for="dataHoraMarcacao{{ marcacao.id }}"
+                                        class="form-label"
+                                    >
+                                        Data e horário
+                                    </label>
+
+                                    <input
+                                        type="datetime-local"
+                                        id="dataHoraMarcacao{{ marcacao.id }}"
+                                        name="capturado_em"
+                                        class="form-control"
+                                        value="{{ marcacao.capturado_em.strftime('%Y-%m-%dT%H:%M:%S') }}"
+                                        step="1"
+                                        required
+                                    >
+
+                                </div>
+
+                                <div class="col-12">
+
+                                    <label
+                                        for="motivoMarcacao{{ marcacao.id }}"
+                                        class="form-label"
+                                    >
+                                        Motivo da correção
+                                    </label>
+
+                                    <textarea
+                                        id="motivoMarcacao{{ marcacao.id }}"
+                                        name="motivo"
+                                        class="form-control"
+                                        rows="3"
+                                        minlength="5"
+                                        maxlength="500"
+                                        placeholder="Ex.: Usuário registrou retorno do intervalo no lugar da saída."
+                                        required
+                                    ></textarea>
+
+                                    <div class="form-text">
+                                        O motivo ficará registrado no histórico da marcação.
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            {% if marcacao.observacao %}
+
+                                <hr class="my-4">
+
+                                <div>
+                                    <label class="form-label">
+                                        Histórico e observações
+                                    </label>
+
+                                    <div
+                                        class="border p-3 bg-light"
+                                        style="white-space: pre-wrap;"
+                                    >{{ marcacao.observacao }}</div>
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+                        <div class="modal-footer">
+
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal"
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                onclick="return confirm(
+                                    'Confirmar a correção desta marcação?'
+                                );"
+                            >
+                                <i class="bi bi-check-lg me-1"></i>
+                                Salvar correção
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
 {% endblock %}

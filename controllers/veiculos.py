@@ -9,6 +9,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from sqlalchemy.exc import IntegrityError
 
 from database.models import Veiculo
 from extensions import db
@@ -28,6 +29,12 @@ PADRAO_PLACA_MERCOSUL = re.compile(
     r"^[A-Z]{3}-\d[A-Z]\d{2}$"
 )
 
+STATUS_PERMITIDOS = {
+    "Ativo",
+    "Em manutenção",
+    "Inativo",
+}
+
 
 def inteiro_ou_none(valor):
     if valor is None or str(valor).strip() == "":
@@ -43,13 +50,16 @@ def normalizar_placa(valor):
     placa_limpa = re.sub(
         r"[^A-Z0-9]",
         "",
-        str(valor).upper(),
+        str(valor or "").upper(),
     )[:7]
 
     if len(placa_limpa) <= 3:
         return placa_limpa
 
-    return f"{placa_limpa[:3]}-{placa_limpa[3:]}"
+    return (
+        f"{placa_limpa[:3]}-"
+        f"{placa_limpa[3:]}"
+    )
 
 
 def placa_valida(placa):
@@ -57,6 +67,123 @@ def placa_valida(placa):
         PADRAO_PLACA_ANTIGA.fullmatch(placa)
         or PADRAO_PLACA_MERCOSUL.fullmatch(placa)
     )
+
+
+def obter_dados_formulario():
+    placa = normalizar_placa(
+        request.form.get("placa", "")
+    )
+
+    modelo = (
+        request.form
+        .get("modelo", "")
+        .strip()
+    )
+
+    ano_texto = (
+        request.form
+        .get("ano", "")
+        .strip()
+    )
+
+    km_texto = (
+        request.form
+        .get("km_atual", "")
+        .strip()
+    )
+
+    ano = inteiro_ou_none(ano_texto)
+    km_atual = inteiro_ou_none(km_texto)
+
+    combustivel = (
+        request.form
+        .get("combustivel", "")
+        .strip()
+    )
+
+    status = (
+        request.form
+        .get("status", "Ativo")
+        .strip()
+    )
+
+    return {
+        "placa": placa,
+        "modelo": modelo,
+        "ano_texto": ano_texto,
+        "ano": ano,
+        "km_texto": km_texto,
+        "km_atual": km_atual,
+        "combustivel": combustivel,
+        "status": status,
+    }
+
+
+def validar_dados_veiculo(
+    empresa_id,
+    dados,
+    veiculo_id=None,
+):
+    placa = dados["placa"]
+    modelo = dados["modelo"]
+    ano_texto = dados["ano_texto"]
+    ano = dados["ano"]
+    km_texto = dados["km_texto"]
+    km_atual = dados["km_atual"]
+    status = dados["status"]
+
+    if not placa:
+        return "Informe a placa do veículo."
+
+    if not placa_valida(placa):
+        return (
+            "Informe uma placa válida nos formatos "
+            "ABC-1234 ou ABC-1D23."
+        )
+
+    if not modelo:
+        return "Informe o modelo do veículo."
+
+    if ano_texto:
+        if ano is None:
+            return "Informe um ano válido."
+
+        if ano < 1900 or ano > 2100:
+            return (
+                "O ano do veículo deve estar "
+                "entre 1900 e 2100."
+            )
+
+    if km_texto:
+        if km_atual is None:
+            return "Informe uma quilometragem válida."
+
+        if km_atual < 0:
+            return (
+                "A quilometragem não pode "
+                "ser negativa."
+            )
+
+    if status not in STATUS_PERMITIDOS:
+        return "Selecione um status válido."
+
+    consulta = Veiculo.query.filter(
+        Veiculo.empresa_id == empresa_id,
+        Veiculo.placa == placa,
+    )
+
+    if veiculo_id is not None:
+        consulta = consulta.filter(
+            Veiculo.id != veiculo_id
+        )
+
+    if consulta.first():
+        return (
+            f"Já existe um veículo com a placa "
+            f"{placa}."
+        )
+
+    return None
 
 
 @veiculos_bp.route("/veiculos")
@@ -93,7 +220,9 @@ def novo_veiculo():
         .count()
     )
 
-    limite_veiculos = empresa.plano.limite_veiculos
+    limite_veiculos = (
+        empresa.plano.limite_veiculos
+    )
 
     if total_veiculos >= limite_veiculos:
         flash(
@@ -104,88 +233,67 @@ def novo_veiculo():
         )
 
         return redirect(
-            url_for("veiculos.listar_veiculos")
+            url_for(
+                "veiculos.listar_veiculos"
+            )
         )
 
-    placa = normalizar_placa(
-        request.form.get("placa", "")
+    dados = obter_dados_formulario()
+
+    dados["status"] = "Ativo"
+
+    erro = validar_dados_veiculo(
+        empresa_id=empresa.id,
+        dados=dados,
     )
 
-    modelo = (
-        request.form
-        .get("modelo", "")
-        .strip()
-    )
-
-    ano = inteiro_ou_none(
-        request.form.get("ano")
-    )
-
-    combustivel = (
-        request.form
-        .get("combustivel", "")
-        .strip()
-    )
-
-    km_atual = (
-        inteiro_ou_none(
-            request.form.get("km_atual")
-        )
-        or 0
-    )
-
-    if not placa or not modelo:
+    if erro:
         flash(
-            "Preencha a placa e o modelo do veículo.",
+            erro,
             "warning",
         )
 
         return redirect(
-            url_for("veiculos.listar_veiculos")
-        )
-
-    if not placa_valida(placa):
-        flash(
-            "Informe uma placa válida nos formatos "
-            "ABC-1234 ou ABC-1D23.",
-            "warning",
-        )
-
-        return redirect(
-            url_for("veiculos.listar_veiculos")
-        )
-
-    veiculo_existente = (
-        Veiculo.query
-        .filter_by(
-            empresa_id=empresa.id,
-            placa=placa,
-        )
-        .first()
-    )
-
-    if veiculo_existente:
-        flash(
-            f"Já existe um veículo com a placa {placa}.",
-            "warning",
-        )
-
-        return redirect(
-            url_for("veiculos.listar_veiculos")
+            url_for(
+                "veiculos.listar_veiculos"
+            )
         )
 
     veiculo = Veiculo(
         empresa_id=empresa.id,
-        placa=placa,
-        modelo=modelo,
-        ano=ano,
-        combustivel=combustivel,
-        km_atual=km_atual,
+        placa=dados["placa"],
+        modelo=dados["modelo"],
+        ano=dados["ano"],
+        combustivel=(
+            dados["combustivel"]
+            or None
+        ),
+        km_atual=(
+            dados["km_atual"]
+            if dados["km_atual"] is not None
+            else 0
+        ),
         status="Ativo",
     )
 
-    db.session.add(veiculo)
-    db.session.commit()
+    try:
+        db.session.add(veiculo)
+        db.session.commit()
+
+    except IntegrityError:
+        db.session.rollback()
+
+        flash(
+            "Não foi possível cadastrar o veículo. "
+            "Verifique se a placa já está cadastrada.",
+            "danger",
+        )
+
+        return redirect(
+            url_for(
+                "veiculos.listar_veiculos"
+            )
+        )
 
     flash(
         "Veículo cadastrado com sucesso.",
@@ -193,5 +301,91 @@ def novo_veiculo():
     )
 
     return redirect(
-        url_for("veiculos.listar_veiculos")
+        url_for(
+            "veiculos.listar_veiculos"
+        )
+    )
+
+
+@veiculos_bp.route(
+    "/veiculos/<int:veiculo_id>/editar",
+    methods=["POST"],
+)
+@login_required
+def editar_veiculo(veiculo_id):
+    empresa = current_user.empresa
+
+    veiculo = (
+        Veiculo.query
+        .filter_by(
+            id=veiculo_id,
+            empresa_id=empresa.id,
+        )
+        .first_or_404()
+    )
+
+    dados = obter_dados_formulario()
+
+    erro = validar_dados_veiculo(
+        empresa_id=empresa.id,
+        dados=dados,
+        veiculo_id=veiculo.id,
+    )
+
+    if erro:
+        flash(
+            erro,
+            "warning",
+        )
+
+        return redirect(
+            url_for(
+                "veiculos.listar_veiculos"
+            )
+        )
+
+    veiculo.placa = dados["placa"]
+    veiculo.modelo = dados["modelo"]
+    veiculo.ano = dados["ano"]
+
+    veiculo.combustivel = (
+        dados["combustivel"]
+        or None
+    )
+
+    veiculo.km_atual = (
+        dados["km_atual"]
+        if dados["km_atual"] is not None
+        else 0
+    )
+
+    veiculo.status = dados["status"]
+
+    try:
+        db.session.commit()
+
+    except IntegrityError:
+        db.session.rollback()
+
+        flash(
+            "Não foi possível atualizar o veículo. "
+            "Verifique se a placa já está cadastrada.",
+            "danger",
+        )
+
+        return redirect(
+            url_for(
+                "veiculos.listar_veiculos"
+            )
+        )
+
+    flash(
+        "Veículo atualizado com sucesso.",
+        "success",
+    )
+
+    return redirect(
+        url_for(
+            "veiculos.listar_veiculos"
+        )
     )

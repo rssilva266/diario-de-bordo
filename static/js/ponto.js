@@ -1,199 +1,717 @@
 (() => {
-    const video = document.getElementById('camera');
-    if (!video) return;
+    const video = document.getElementById("camera");
+    const canvas = document.getElementById("captura");
+    const preview = document.getElementById("fotoPreview");
+    const placeholder = document.getElementById("cameraPlaceholder");
+    const contador = document.getElementById("contadorCaptura");
 
-    const canvas = document.getElementById('captura');
-    const preview = document.getElementById('fotoPreview');
-    const placeholder = document.getElementById('cameraPlaceholder');
-    const btnCamera = document.getElementById('btnCamera');
-    const btnFoto = document.getElementById('btnFoto');
-    const btnLocal = document.getElementById('btnLocal');
-    const locationStatus = document.getElementById('locationStatus');
-    const syncStatus = document.getElementById('syncStatus');
-    const colaboradorId = document.getElementById('colaboradorId').value;
+    const btnRegistrar = document.getElementById(
+        "btnRegistrarPonto"
+    );
+
+    const locationStatus = document.getElementById(
+        "locationStatus"
+    );
+
+    const syncStatus = document.getElementById(
+        "syncStatus"
+    );
+
+    const campoColaborador = document.getElementById(
+        "colaboradorId"
+    );
+
+    if (
+        !video
+        || !canvas
+        || !btnRegistrar
+        || !campoColaborador
+    ) {
+        return;
+    }
+
+    const colaboradorId = campoColaborador.value;
 
     let stream = null;
-    let fotoBlob = null;
-    let localizacao = null;
+    let processando = false;
+
 
     function agoraLocal() {
         return new Date();
     }
 
+
     function atualizarRelogio() {
-        const el = document.getElementById('relogio');
-        if (el) el.textContent = agoraLocal().toLocaleTimeString('pt-BR');
+        const relogio = document.getElementById(
+            "relogio"
+        );
+
+        if (relogio) {
+            relogio.textContent = (
+                agoraLocal()
+                .toLocaleTimeString("pt-BR")
+            );
+        }
     }
+
+
     atualizarRelogio();
-    setInterval(atualizarRelogio, 1000);
 
-    function getDeviceId() {
-        let id = localStorage.getItem('msm_device_id');
-        if (!id) {
-            id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-            localStorage.setItem('msm_device_id', id);
+    setInterval(
+        atualizarRelogio,
+        1000
+    );
+
+
+    function criarUuid() {
+        if (
+            window.crypto
+            && crypto.randomUUID
+        ) {
+            return crypto.randomUUID();
         }
-        return id;
-    }
 
-    async function ativarCamera() {
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-                audio: false,
-            });
-            video.srcObject = stream;
-            video.style.display = 'block';
-            placeholder.style.display = 'none';
-            preview.style.display = 'none';
-            btnFoto.disabled = false;
-            syncStatus.innerHTML = '<div class="alert alert-success py-2">Câmera pronta.</div>';
-        } catch (erro) {
-            syncStatus.innerHTML = '<div class="alert alert-danger py-2">Não foi possível acessar a câmera. Verifique a permissão do navegador.</div>';
-        }
-    }
-
-    function capturarFoto() {
-        if (!stream) return;
-        const largura = video.videoWidth || 720;
-        const altura = video.videoHeight || 720;
-        canvas.width = largura;
-        canvas.height = altura;
-        canvas.getContext('2d').drawImage(video, 0, 0, largura, altura);
-        canvas.toBlob((blob) => {
-            fotoBlob = blob;
-            preview.src = URL.createObjectURL(blob);
-            preview.style.display = 'block';
-            video.style.display = 'none';
-            placeholder.style.display = 'none';
-            syncStatus.innerHTML = '<div class="alert alert-success py-2">Foto facial capturada.</div>';
-        }, 'image/jpeg', 0.88);
-    }
-
-    function obterLocalizacao() {
-        if (!navigator.geolocation) {
-            locationStatus.innerHTML = '<i class="bi bi-exclamation-triangle"></i> GPS indisponível neste aparelho.';
-            return;
-        }
-        locationStatus.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Obtendo localização...';
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                localizacao = {
-                    latitude: pos.coords.latitude,
-                    longitude: pos.coords.longitude,
-                    precisao: pos.coords.accuracy,
-                };
-                locationStatus.innerHTML = `<i class="bi bi-geo-alt-fill text-success"></i> Localização obtida · precisão aproximada de ${Math.round(pos.coords.accuracy)} m`;
-            },
-            () => {
-                locationStatus.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i> Não foi possível obter o GPS. O ponto ainda poderá ser enviado, mas ficará sem validação de local.';
-            },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+        return (
+            `${Date.now()}-`
+            + `${Math.random()}`
         );
     }
 
-    function filaOffline() {
-        try { return JSON.parse(localStorage.getItem('msm_ponto_offline') || '[]'); }
-        catch { return []; }
+
+    function obterDispositivoId() {
+        let dispositivoId = localStorage.getItem(
+            "msm_device_id"
+        );
+
+        if (!dispositivoId) {
+            dispositivoId = criarUuid();
+
+            localStorage.setItem(
+                "msm_device_id",
+                dispositivoId
+            );
+        }
+
+        return dispositivoId;
     }
 
-    function salvarFila(item) {
-        const fila = filaOffline();
-        fila.push(item);
-        localStorage.setItem('msm_ponto_offline', JSON.stringify(fila));
+
+    function mostrarMensagem(
+        tipo,
+        mensagem
+    ) {
+        if (!syncStatus) {
+            return;
+        }
+
+        syncStatus.innerHTML = `
+            <div class="alert alert-${tipo}">
+                ${mensagem}
+            </div>
+        `;
     }
 
-    async function blobParaBase64(blob) {
-        return await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
+
+    async function ativarCamera() {
+        if (
+            !navigator.mediaDevices
+            || !navigator.mediaDevices.getUserMedia
+        ) {
+            throw new Error(
+                "A câmera não está disponível neste navegador."
+            );
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "user",
+
+                width: {
+                    ideal: 1280,
+                },
+
+                height: {
+                    ideal: 720,
+                },
+            },
+
+            audio: false,
+        });
+
+        video.srcObject = stream;
+
+        video.style.display = "block";
+        preview.style.display = "none";
+        placeholder.style.display = "none";
+
+        await video.play();
+
+        await new Promise((resolve) => {
+            if (
+                video.readyState >= 2
+                && video.videoWidth > 0
+            ) {
+                resolve();
+                return;
+            }
+
+            video.addEventListener(
+                "loadeddata",
+                resolve,
+                {
+                    once: true,
+                }
+            );
         });
     }
+
+
+    function encerrarCamera() {
+        if (!stream) {
+            return;
+        }
+
+        stream.getTracks().forEach(
+            (trilha) => trilha.stop()
+        );
+
+        stream = null;
+        video.srcObject = null;
+    }
+
+
+    function esperar(milissegundos) {
+        return new Promise(
+            (resolve) => {
+                setTimeout(
+                    resolve,
+                    milissegundos
+                );
+            }
+        );
+    }
+
+
+    async function iniciarContagem() {
+        contador.style.display = "block";
+
+        for (
+            let numero = 3;
+            numero >= 1;
+            numero -= 1
+        ) {
+            contador.textContent = numero;
+
+            await esperar(1000);
+        }
+
+        contador.style.display = "none";
+    }
+
+
+    function capturarFoto() {
+        return new Promise(
+            (resolve, reject) => {
+                const largura = (
+                    video.videoWidth
+                    || 720
+                );
+
+                const altura = (
+                    video.videoHeight
+                    || 720
+                );
+
+                if (
+                    !largura
+                    || !altura
+                ) {
+                    reject(
+                        new Error(
+                            "A câmera ainda não está pronta."
+                        )
+                    );
+
+                    return;
+                }
+
+                canvas.width = largura;
+                canvas.height = altura;
+
+                const contexto = canvas.getContext(
+                    "2d"
+                );
+
+                contexto.drawImage(
+                    video,
+                    0,
+                    0,
+                    largura,
+                    altura
+                );
+
+                canvas.toBlob(
+                    (fotoBlob) => {
+                        if (!fotoBlob) {
+                            reject(
+                                new Error(
+                                    "Não foi possível capturar a fotografia."
+                                )
+                            );
+
+                            return;
+                        }
+
+                        preview.src = URL.createObjectURL(
+                            fotoBlob
+                        );
+
+                        preview.style.display = "block";
+                        video.style.display = "none";
+                        placeholder.style.display = "none";
+
+                        resolve(fotoBlob);
+                    },
+                    "image/jpeg",
+                    0.88
+                );
+            }
+        );
+    }
+
+
+    function obterLocalizacao() {
+        return new Promise(
+            (resolve) => {
+                if (!navigator.geolocation) {
+                    locationStatus.innerHTML = `
+                        <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                        GPS indisponível. O ponto será enviado sem validação de local.
+                    `;
+
+                    resolve(null);
+                    return;
+                }
+
+                locationStatus.innerHTML = `
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                    Obtendo localização...
+                `;
+
+                navigator.geolocation.getCurrentPosition(
+                    (posicao) => {
+                        const localizacao = {
+                            latitude:
+                                posicao.coords.latitude,
+
+                            longitude:
+                                posicao.coords.longitude,
+
+                            precisao:
+                                posicao.coords.accuracy,
+                        };
+
+                        locationStatus.innerHTML = `
+                            <i class="bi bi-geo-alt-fill text-success me-1"></i>
+                            Localização obtida · precisão aproximada de
+                            ${Math.round(posicao.coords.accuracy)} m
+                        `;
+
+                        resolve(localizacao);
+                    },
+
+                    () => {
+                        locationStatus.innerHTML = `
+                            <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                            Não foi possível obter o GPS. O ponto será enviado sem validação de local.
+                        `;
+
+                        resolve(null);
+                    },
+
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 30000,
+                    }
+                );
+            }
+        );
+    }
+
+
+    function carregarFilaOffline() {
+        try {
+            return JSON.parse(
+                localStorage.getItem(
+                    "msm_ponto_offline"
+                )
+                || "[]"
+            );
+        } catch {
+            return [];
+        }
+    }
+
+
+    function salvarNaFilaOffline(item) {
+        const fila = carregarFilaOffline();
+
+        fila.push(item);
+
+        localStorage.setItem(
+            "msm_ponto_offline",
+            JSON.stringify(fila)
+        );
+    }
+
+
+    function blobParaBase64(blob) {
+        return new Promise(
+            (resolve, reject) => {
+                const leitor = new FileReader();
+
+                leitor.onloadend = () => {
+                    resolve(leitor.result);
+                };
+
+                leitor.onerror = () => {
+                    reject(
+                        new Error(
+                            "Não foi possível guardar a fotografia."
+                        )
+                    );
+                };
+
+                leitor.readAsDataURL(blob);
+            }
+        );
+    }
+
 
     function base64ParaBlob(dataUrl) {
-        const [cabecalho, dados] = dataUrl.split(',');
-        const mime = cabecalho.match(/:(.*?);/)[1];
+        const partes = dataUrl.split(",");
+
+        const cabecalho = partes[0];
+        const dados = partes[1];
+
+        const correspondencia = cabecalho.match(
+            /:(.*?);/
+        );
+
+        const mime = (
+            correspondencia
+            ? correspondencia[1]
+            : "image/jpeg"
+        );
+
         const binario = atob(dados);
-        const bytes = new Uint8Array(binario.length);
-        for (let i = 0; i < binario.length; i += 1) bytes[i] = binario.charCodeAt(i);
-        return new Blob([bytes], { type: mime });
+
+        const bytes = new Uint8Array(
+            binario.length
+        );
+
+        for (
+            let indice = 0;
+            indice < binario.length;
+            indice += 1
+        ) {
+            bytes[indice] = (
+                binario.charCodeAt(indice)
+            );
+        }
+
+        return new Blob(
+            [bytes],
+            {
+                type: mime,
+            }
+        );
     }
 
-    async function enviarRegistro(registro, foto) {
-        const form = new FormData();
-        Object.entries(registro).forEach(([chave, valor]) => {
-            if (valor !== null && valor !== undefined) form.append(chave, valor);
-        });
-        form.append('foto', foto, 'ponto.jpg');
-        const resposta = await fetch('/api/ponto/registrar', { method: 'POST', body: form });
-        const dados = await resposta.json();
-        if (!resposta.ok || !dados.ok) throw new Error(dados.erro || 'Falha ao registrar ponto.');
+
+    async function enviarRegistro(
+        registro,
+        foto
+    ) {
+        const formulario = new FormData();
+
+        Object.entries(registro).forEach(
+            ([chave, valor]) => {
+                if (
+                    valor !== null
+                    && valor !== undefined
+                    && valor !== ""
+                ) {
+                    formulario.append(
+                        chave,
+                        valor
+                    );
+                }
+            }
+        );
+
+        formulario.append(
+            "foto",
+            foto,
+            "ponto.jpg"
+        );
+
+        const resposta = await fetch(
+            "/api/ponto/registrar",
+            {
+                method: "POST",
+                body: formulario,
+            }
+        );
+
+        let dados;
+
+        try {
+            dados = await resposta.json();
+        } catch {
+            throw new Error(
+                "O servidor retornou uma resposta inválida."
+            );
+        }
+
+        if (
+            !resposta.ok
+            || !dados.ok
+        ) {
+            throw new Error(
+                dados.erro
+                || "Falha ao registrar o ponto."
+            );
+        }
+
         return dados;
     }
 
-    async function registrar(tipo) {
-        if (!fotoBlob) {
-            syncStatus.innerHTML = '<div class="alert alert-warning py-2">Capture a foto facial antes de registrar.</div>';
+
+    async function registrarPonto() {
+        if (processando) {
             return;
         }
 
-        const registro = {
-            client_uuid: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-            colaborador_id: colaboradorId,
-            tipo,
-            capturado_em: agoraLocal().toISOString(),
-            latitude: localizacao?.latitude,
-            longitude: localizacao?.longitude,
-            precisao_metros: localizacao?.precisao,
-            dispositivo_id: getDeviceId(),
-            dispositivo_info: navigator.userAgent,
-        };
+        processando = true;
 
-        syncStatus.innerHTML = '<div class="alert alert-info py-2"><span class="spinner-border spinner-border-sm"></span> Registrando ponto...</div>';
+        btnRegistrar.disabled = true;
 
-        if (!navigator.onLine) {
-            salvarFila({ registro, fotoBase64: await blobParaBase64(fotoBlob) });
-            syncStatus.innerHTML = '<div class="alert alert-warning py-2"><i class="bi bi-cloud-slash"></i> Sem internet. O ponto foi guardado neste aparelho e será sincronizado automaticamente.</div>';
-            return;
-        }
+        const textoOriginal = btnRegistrar.innerHTML;
+
+        btnRegistrar.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Preparando registro...
+        `;
+
+        mostrarMensagem(
+            "info",
+            "Autorize o uso da câmera e da localização quando o navegador solicitar."
+        );
 
         try {
-            const dados = await enviarRegistro(registro, fotoBlob);
-            const area = dados.dentro_geocerca === true ? ' · dentro da área' : dados.dentro_geocerca === false ? ' · fora da área' : '';
-            syncStatus.innerHTML = `<div class="alert alert-success"><strong>Ponto registrado!</strong><br>${dados.tipo}${area}</div>`;
-            setTimeout(() => window.location.reload(), 1200);
+            const promessaLocalizacao = obterLocalizacao();
+
+            await ativarCamera();
+
+            mostrarMensagem(
+                "info",
+                "Posicione o rosto diante da câmera. A fotografia será tirada automaticamente."
+            );
+
+            await iniciarContagem();
+
+            const fotoBlob = await capturarFoto();
+
+            encerrarCamera();
+
+            const localizacao = await promessaLocalizacao;
+
+            const registro = {
+                client_uuid:
+                    criarUuid(),
+
+                colaborador_id:
+                    colaboradorId,
+
+                capturado_em:
+                    agoraLocal().toISOString(),
+
+                latitude:
+                    localizacao?.latitude,
+
+                longitude:
+                    localizacao?.longitude,
+
+                precisao_metros:
+                    localizacao?.precisao,
+
+                dispositivo_id:
+                    obterDispositivoId(),
+
+                dispositivo_info:
+                    navigator.userAgent,
+            };
+
+            mostrarMensagem(
+                "info",
+                `
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                    Registrando ponto...
+                `
+            );
+
+            if (!navigator.onLine) {
+                salvarNaFilaOffline({
+                    registro,
+                    fotoBase64:
+                        await blobParaBase64(
+                            fotoBlob
+                        ),
+                });
+
+                mostrarMensagem(
+                    "warning",
+                    `
+                        <i class="bi bi-cloud-slash me-1"></i>
+                        Sem internet. O ponto foi guardado neste aparelho e será sincronizado automaticamente.
+                    `
+                );
+
+                return;
+            }
+
+            const dados = await enviarRegistro(
+                registro,
+                fotoBlob
+            );
+
+            let situacaoArea = "";
+
+            if (
+                dados.dentro_geocerca === true
+            ) {
+                situacaoArea = (
+                    " · dentro da área permitida"
+                );
+            } else if (
+                dados.dentro_geocerca === false
+            ) {
+                situacaoArea = (
+                    " · fora da área permitida"
+                );
+            }
+
+            mostrarMensagem(
+                "success",
+                `
+                    <strong>
+                        <i class="bi bi-check-circle me-1"></i>
+                        Ponto registrado!
+                    </strong>
+
+                    <br>
+
+                    ${dados.tipo}${situacaoArea}
+                `
+            );
+
+            setTimeout(
+                () => {
+                    window.location.reload();
+                },
+                1500
+            );
+
         } catch (erro) {
-            salvarFila({ registro, fotoBase64: await blobParaBase64(fotoBlob) });
-            syncStatus.innerHTML = `<div class="alert alert-warning py-2">Não foi possível enviar agora. O registro ficou salvo para sincronização. ${erro.message}</div>`;
+            encerrarCamera();
+
+            preview.style.display = "none";
+            placeholder.style.display = "flex";
+
+            mostrarMensagem(
+                "danger",
+                `
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    ${erro.message}
+                `
+            );
+
+        } finally {
+            processando = false;
+
+            btnRegistrar.disabled = false;
+            btnRegistrar.innerHTML = textoOriginal;
         }
     }
 
+
     async function sincronizarFila() {
-        if (!navigator.onLine) return;
-        const fila = filaOffline();
-        if (!fila.length) return;
+        if (!navigator.onLine) {
+            return;
+        }
+
+        const fila = carregarFilaOffline();
+
+        if (!fila.length) {
+            return;
+        }
+
         const restantes = [];
+
         for (const item of fila) {
             try {
-                await enviarRegistro(item.registro, base64ParaBlob(item.fotoBase64));
+                await enviarRegistro(
+                    item.registro,
+                    base64ParaBlob(
+                        item.fotoBase64
+                    )
+                );
+
             } catch {
                 restantes.push(item);
             }
         }
-        localStorage.setItem('msm_ponto_offline', JSON.stringify(restantes));
+
+        localStorage.setItem(
+            "msm_ponto_offline",
+            JSON.stringify(restantes)
+        );
+
         if (!restantes.length) {
-            syncStatus.innerHTML = '<div class="alert alert-success py-2"><i class="bi bi-cloud-check"></i> Marcações offline sincronizadas.</div>';
-            setTimeout(() => window.location.reload(), 1200);
+            mostrarMensagem(
+                "success",
+                `
+                    <i class="bi bi-cloud-check me-1"></i>
+                    Marcações pendentes sincronizadas.
+                `
+            );
+
+            setTimeout(
+                () => {
+                    window.location.reload();
+                },
+                1200
+            );
         }
     }
 
-    btnCamera.addEventListener('click', ativarCamera);
-    btnFoto.addEventListener('click', capturarFoto);
-    btnLocal.addEventListener('click', obterLocalizacao);
-    document.querySelectorAll('.ponto-action').forEach((botao) => {
-        botao.addEventListener('click', () => registrar(botao.dataset.tipo));
-    });
-    window.addEventListener('online', sincronizarFila);
+
+    btnRegistrar.addEventListener(
+        "click",
+        registrarPonto
+    );
+
+    window.addEventListener(
+        "online",
+        sincronizarFila
+    );
+
+    window.addEventListener(
+        "beforeunload",
+        encerrarCamera
+    );
+
     sincronizarFila();
 })();

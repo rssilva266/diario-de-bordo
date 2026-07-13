@@ -733,3 +733,82 @@ body.app-body{
     .camera-box, .camera-box video, .camera-box img { min-height: 280px; height: 280px; }
     .ponto-clock { font-size: 1.6rem; }
 }
+
+/* CORREÇÃO DA SIDEBAR RECOLHIDA */
+
+@media (min-width: 992px){
+
+    body.sidebar-mini.sidebar-collapse
+    .app-sidebar .nav-header{
+        display: none !important;
+    }
+
+    /*
+     * Quando a barra estiver recolhida, exibe somente
+     * os ícones principais. Os submenus aparecem quando
+     * a barra for aberta pelo botão superior.
+     */
+    body.sidebar-mini.sidebar-collapse
+    .app-sidebar .nav-treeview{
+        display: none !important;
+    }
+
+    /*
+     * Impede o menu principal e o submenu de ficarem
+     * lado a lado.
+     */
+    body.sidebar-mini.sidebar-collapse
+    .app-sidebar .sidebar-menu > .nav-item{
+        display: block !important;
+
+        width: 100% !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /*
+     * Centraliza cada botão principal dentro da barra.
+     */
+    body.sidebar-mini.sidebar-collapse
+    .app-sidebar .sidebar-menu > .nav-item > .nav-link{
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+
+        height: 42px !important;
+        min-height: 42px !important;
+
+        margin: 6px auto !important;
+        padding: 0 !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse
+    .app-sidebar .sidebar-menu > .nav-item > .nav-link .nav-icon{
+        position: static !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        width: 22px !important;
+        min-width: 22px !important;
+        height: 22px !important;
+
+        margin: 0 !important;
+
+        font-size: 1.05rem !important;
+        line-height: 1 !important;
+
+        transform: none !important;
+    }
+
+    body.sidebar-mini.sidebar-collapse
+    .app-sidebar .sidebar-menu > .nav-item > .nav-link p{
+        display: none !important;
+    }
+}

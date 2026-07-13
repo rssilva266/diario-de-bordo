@@ -33,29 +33,8 @@
 </div>
 {% endblock %}
 
+
 {% block conteudo %}
-
-{% with mensagens = get_flashed_messages(with_categories=true) %}
-    {% if mensagens %}
-
-        {% for categoria, mensagem in mensagens %}
-            <div
-                class="alert alert-{{ categoria }} alert-dismissible fade show"
-                role="alert"
-            >
-                {{ mensagem }}
-
-                <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Fechar"
-                ></button>
-            </div>
-        {% endfor %}
-
-    {% endif %}
-{% endwith %}
 
 <div class="section-card">
 
@@ -73,6 +52,7 @@
                         <th>Combustível</th>
                         <th>KM atual</th>
                         <th>Status</th>
+                        <th class="text-end">Ações</th>
                     </tr>
                 </thead>
 
@@ -108,11 +88,29 @@
                                     <span class="badge text-bg-success">
                                         Ativo
                                     </span>
+
+                                {% elif veiculo.status == "Em manutenção" %}
+                                    <span class="badge text-bg-warning">
+                                        Em manutenção
+                                    </span>
+
                                 {% else %}
                                     <span class="badge text-bg-secondary">
                                         {{ veiculo.status }}
                                     </span>
                                 {% endif %}
+                            </td>
+
+                            <td class="text-end">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalEditarVeiculo{{ veiculo.id }}"
+                                >
+                                    <i class="bi bi-pencil-square me-1"></i>
+                                    Editar
+                                </button>
                             </td>
 
                         </tr>
@@ -144,6 +142,246 @@
 
 </div>
 
+
+{% for veiculo in veiculos %}
+
+<div
+    class="modal fade"
+    id="modalEditarVeiculo{{ veiculo.id }}"
+    tabindex="-1"
+    aria-labelledby="modalEditarVeiculoTitulo{{ veiculo.id }}"
+    aria-hidden="true"
+>
+    <div class="modal-dialog">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('veiculos.editar_veiculo', veiculo_id=veiculo.id) }}"
+                class="form-veiculo"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="modalEditarVeiculoTitulo{{ veiculo.id }}"
+                    >
+                        Editar veículo
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+
+                        <label
+                            for="placaEditar{{ veiculo.id }}"
+                            class="form-label"
+                        >
+                            Placa
+                        </label>
+
+                        <input
+                            type="text"
+                            id="placaEditar{{ veiculo.id }}"
+                            name="placa"
+                            class="form-control text-uppercase campo-placa"
+                            maxlength="8"
+                            value="{{ veiculo.placa }}"
+                            autocomplete="off"
+                            spellcheck="false"
+                            required
+                        >
+
+                        <div class="form-text">
+                            Formatos aceitos: ABC-1234 ou ABC-1D23.
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="modeloEditar{{ veiculo.id }}"
+                            class="form-label"
+                        >
+                            Modelo
+                        </label>
+
+                        <input
+                            type="text"
+                            id="modeloEditar{{ veiculo.id }}"
+                            name="modelo"
+                            class="form-control"
+                            value="{{ veiculo.modelo }}"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="anoEditar{{ veiculo.id }}"
+                                class="form-label"
+                            >
+                                Ano
+                            </label>
+
+                            <input
+                                type="number"
+                                id="anoEditar{{ veiculo.id }}"
+                                name="ano"
+                                class="form-control"
+                                min="1900"
+                                max="2100"
+                                value="{{ veiculo.ano or '' }}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label
+                                for="kmEditar{{ veiculo.id }}"
+                                class="form-label"
+                            >
+                                KM atual
+                            </label>
+
+                            <input
+                                type="number"
+                                id="kmEditar{{ veiculo.id }}"
+                                name="km_atual"
+                                class="form-control"
+                                min="0"
+                                value="{{ veiculo.km_atual }}"
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="combustivelEditar{{ veiculo.id }}"
+                            class="form-label"
+                        >
+                            Combustível
+                        </label>
+
+                        <select
+                            id="combustivelEditar{{ veiculo.id }}"
+                            name="combustivel"
+                            class="form-select"
+                        >
+                            <option value="">
+                                Selecione
+                            </option>
+
+                            {% for combustivel in [
+                                "Gasolina",
+                                "Diesel",
+                                "Flex",
+                                "Etanol",
+                                "Elétrico",
+                                "Híbrido"
+                            ] %}
+                                <option
+                                    value="{{ combustivel }}"
+                                    {% if veiculo.combustivel == combustivel %}selected{% endif %}
+                                >
+                                    {{ combustivel }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="statusEditar{{ veiculo.id }}"
+                            class="form-label"
+                        >
+                            Status
+                        </label>
+
+                        <select
+                            id="statusEditar{{ veiculo.id }}"
+                            name="status"
+                            class="form-select"
+                            required
+                        >
+                            <option
+                                value="Ativo"
+                                {% if veiculo.status == "Ativo" %}selected{% endif %}
+                            >
+                                Ativo
+                            </option>
+
+                            <option
+                                value="Em manutenção"
+                                {% if veiculo.status == "Em manutenção" %}selected{% endif %}
+                            >
+                                Em manutenção
+                            </option>
+
+                            <option
+                                value="Inativo"
+                                {% if veiculo.status == "Inativo" %}selected{% endif %}
+                            >
+                                Inativo
+                            </option>
+                        </select>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar alterações
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% endfor %}
+
+
 <div
     class="modal fade"
     id="modalNovoVeiculo"
@@ -159,6 +397,7 @@
                 method="POST"
                 action="{{ url_for('veiculos.novo_veiculo') }}"
                 id="formNovoVeiculo"
+                class="form-veiculo"
             >
 
                 <div class="modal-header">
@@ -194,7 +433,7 @@
                             type="text"
                             id="placa"
                             name="placa"
-                            class="form-control text-uppercase"
+                            class="form-control text-uppercase campo-placa"
                             maxlength="8"
                             placeholder="ABC-1234 ou ABC-1D23"
                             autocomplete="off"
@@ -346,14 +585,12 @@
     </div>
 </div>
 
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const campoPlaca = document.getElementById("placa");
-    const formulario = document.getElementById("formNovoVeiculo");
-
-    if (!campoPlaca || !formulario) {
-        return;
-    }
+    const formularios = document.querySelectorAll(
+        ".form-veiculo"
+    );
 
     function formatarPlaca(valor) {
         const placaLimpa = valor
@@ -373,8 +610,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function placaValida(placa) {
-        const placaAntiga = /^[A-Z]{3}-\d{4}$/;
-        const placaMercosul = /^[A-Z]{3}-\d[A-Z]\d{2}$/;
+        const placaAntiga =
+            /^[A-Z]{3}-\d{4}$/;
+
+        const placaMercosul =
+            /^[A-Z]{3}-\d[A-Z]\d{2}$/;
 
         return (
             placaAntiga.test(placa)
@@ -382,46 +622,67 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
-    campoPlaca.addEventListener("input", function () {
-        campoPlaca.value = formatarPlaca(
-            campoPlaca.value
+    formularios.forEach(function (formulario) {
+        const campoPlaca = formulario.querySelector(
+            ".campo-placa"
         );
 
-        campoPlaca.setCustomValidity("");
-    });
-
-    campoPlaca.addEventListener("blur", function () {
-        if (
-            campoPlaca.value
-            && !placaValida(campoPlaca.value)
-        ) {
-            campoPlaca.setCustomValidity(
-                "Informe uma placa válida: ABC-1234 ou ABC-1D23."
-            );
-        } else {
-            campoPlaca.setCustomValidity("");
-        }
-    });
-
-    formulario.addEventListener("submit", function (event) {
-        campoPlaca.value = formatarPlaca(
-            campoPlaca.value
-        );
-
-        if (!placaValida(campoPlaca.value)) {
-            event.preventDefault();
-
-            campoPlaca.setCustomValidity(
-                "Informe uma placa válida: ABC-1234 ou ABC-1D23."
-            );
-
-            campoPlaca.reportValidity();
-            campoPlaca.focus();
-
+        if (!campoPlaca) {
             return;
         }
 
-        campoPlaca.setCustomValidity("");
+        campoPlaca.addEventListener(
+            "input",
+            function () {
+                campoPlaca.value = formatarPlaca(
+                    campoPlaca.value
+                );
+
+                campoPlaca.setCustomValidity("");
+            }
+        );
+
+        campoPlaca.addEventListener(
+            "blur",
+            function () {
+                if (
+                    campoPlaca.value
+                    && !placaValida(campoPlaca.value)
+                ) {
+                    campoPlaca.setCustomValidity(
+                        "Informe uma placa válida: "
+                        + "ABC-1234 ou ABC-1D23."
+                    );
+                } else {
+                    campoPlaca.setCustomValidity("");
+                }
+            }
+        );
+
+        formulario.addEventListener(
+            "submit",
+            function (event) {
+                campoPlaca.value = formatarPlaca(
+                    campoPlaca.value
+                );
+
+                if (!placaValida(campoPlaca.value)) {
+                    event.preventDefault();
+
+                    campoPlaca.setCustomValidity(
+                        "Informe uma placa válida: "
+                        + "ABC-1234 ou ABC-1D23."
+                    );
+
+                    campoPlaca.reportValidity();
+                    campoPlaca.focus();
+
+                    return;
+                }
+
+                campoPlaca.setCustomValidity("");
+            }
+        );
     });
 });
 </script>

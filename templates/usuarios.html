@@ -1,6 +1,692 @@
-{% extends 'layout/base.html' %}
-{% block titulo %}<div class="d-flex justify-content-between align-items-center"><div><h1 class="mb-1">Usuários</h1><p class="text-secondary mb-0">Contas de acesso, perfis e situação dos usuários.</p></div><button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoUsuario"><i class="bi bi-person-plus me-2"></i>Novo usuário</button></div>{% endblock %}
+{% extends "layout/base.html" %}
+
+{% block titulo %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+    <div>
+        <h1 class="page-title mb-1">
+            Usuários
+        </h1>
+
+        <p class="text-muted mb-0">
+            Gerencie contas de acesso, perfis e situação dos usuários.
+        </p>
+    </div>
+
+    <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#novoUsuario"
+    >
+        <i class="bi bi-person-plus me-1"></i>
+        Novo usuário
+    </button>
+
+</div>
+{% endblock %}
+
+
 {% block conteudo %}
-<div class="card panel-card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Nome</th><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th class="text-end">Ações</th></tr></thead><tbody>{% for usuario in usuarios %}<tr><td><strong>{{ usuario.nome }}</strong></td><td>{{ usuario.usuario }}</td><td>{{ usuario.email or '—' }}</td><td><span class="badge text-bg-secondary">{{ usuario.perfil }}</span></td><td>{% if usuario.ativo %}<span class="badge text-bg-success">Ativo</span>{% else %}<span class="badge text-bg-danger">Inativo</span>{% endif %}</td><td>{{ usuario.ultimo_acesso.strftime('%d/%m/%Y %H:%M') if usuario.ultimo_acesso else 'Nunca' }}</td><td class="text-end"><form method="post" action="{{ url_for('usuarios.alterar_status', usuario_id=usuario.id) }}"><button class="btn btn-sm btn-outline-secondary" {% if usuario.id == current_user.id %}disabled{% endif %}>{% if usuario.ativo %}Desativar{% else %}Ativar{% endif %}</button></form></td></tr>{% else %}<tr><td colspan="7" class="text-center py-5">Nenhum usuário cadastrado.</td></tr>{% endfor %}</tbody></table></div></div></div>
-<div class="modal fade" id="novoUsuario" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="post" action="{{ url_for('usuarios.novo_usuario') }}"><div class="modal-header"><h5 class="modal-title">Novo usuário</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Nome</label><input class="form-control" name="nome" required></div><div class="mb-3"><label class="form-label">Usuário</label><input class="form-control" name="usuario" required></div><div class="mb-3"><label class="form-label">E-mail</label><input type="email" class="form-control" name="email"></div><div class="mb-3"><label class="form-label">Perfil</label><select class="form-select" name="perfil"><option>Administrador</option><option>Gestor</option><option>Frota</option><option>RH</option><option>Motorista</option><option>Operador</option></select></div><div><label class="form-label">Senha temporária</label><input type="password" class="form-control" name="senha" minlength="6" required><small class="text-secondary">O usuário deverá trocar a senha no primeiro acesso.</small></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary">Cadastrar</button></div></form></div></div></div>
+
+<div class="section-card">
+
+    {% if usuarios %}
+
+        <div class="table-responsive">
+
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Usuário</th>
+                        <th>E-mail</th>
+                        <th>Perfil</th>
+                        <th>Status</th>
+                        <th>Senha</th>
+                        <th>Último acesso</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for usuario in usuarios %}
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ usuario.nome }}
+                                </strong>
+
+                                {% if usuario.id == current_user.id %}
+                                    <span class="badge text-bg-light border ms-1">
+                                        Você
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ usuario.usuario }}
+                            </td>
+
+                            <td>
+                                {{ usuario.email or "—" }}
+                            </td>
+
+                            <td>
+                                {% if (usuario.perfil or "")|lower == "administrador" %}
+                                    <span class="badge text-bg-primary">
+                                        Administrador
+                                    </span>
+
+                                {% elif usuario.perfil == "Gestor" %}
+                                    <span class="badge text-bg-info">
+                                        Gestor
+                                    </span>
+
+                                {% elif usuario.perfil == "RH" %}
+                                    <span class="badge text-bg-warning">
+                                        RH
+                                    </span>
+
+                                {% else %}
+                                    <span class="badge text-bg-secondary">
+                                        {{ usuario.perfil }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if usuario.ativo %}
+                                    <span class="badge text-bg-success">
+                                        Ativo
+                                    </span>
+                                {% else %}
+                                    <span class="badge text-bg-danger">
+                                        Inativo
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if usuario.trocar_senha %}
+                                    <span class="badge text-bg-warning">
+                                        Troca pendente
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">
+                                        Definida
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if usuario.ultimo_acesso %}
+                                    {{ usuario.ultimo_acesso.strftime("%d/%m/%Y %H:%M") }}
+                                {% else %}
+                                    Nunca
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end">
+
+                                <div class="d-inline-flex gap-1">
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-outline-primary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editarUsuario{{ usuario.id }}"
+                                    >
+                                        <i class="bi bi-pencil-square me-1"></i>
+                                        Editar
+                                    </button>
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'usuarios.alterar_status',
+                                            usuario_id=usuario.id
+                                        ) }}"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-outline-{{ 'danger' if usuario.ativo else 'success' }}"
+                                            {% if usuario.id == current_user.id %}
+                                                disabled
+                                                title="Você não pode desativar sua própria conta"
+                                            {% else %}
+                                                onclick="return confirm(
+                                                    '{{ 'Desativar' if usuario.ativo else 'Ativar' }} o usuário {{ usuario.nome }}?'
+                                                );"
+                                            {% endif %}
+                                        >
+                                            <i class="bi bi-{{ 'person-x' if usuario.ativo else 'person-check' }} me-1"></i>
+
+                                            {{ "Desativar" if usuario.ativo else "Ativar" }}
+                                        </button>
+                                    </form>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="text-center py-5">
+
+            <i class="bi bi-people fs-1 text-secondary"></i>
+
+            <h3 class="fs-5 mt-3">
+                Nenhum usuário cadastrado
+            </h3>
+
+            <p class="text-muted mb-0">
+                Cadastre uma conta para permitir acesso ao sistema.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+{% for usuario in usuarios %}
+
+<div
+    class="modal fade"
+    id="editarUsuario{{ usuario.id }}"
+    tabindex="-1"
+    aria-labelledby="editarUsuarioTitulo{{ usuario.id }}"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'usuarios.editar_usuario',
+                    usuario_id=usuario.id
+                ) }}"
+                class="form-editar-usuario"
+            >
+
+                <div class="modal-header">
+
+                    <div>
+                        <h5
+                            class="modal-title"
+                            id="editarUsuarioTitulo{{ usuario.id }}"
+                        >
+                            Editar usuário
+                        </h5>
+
+                        <small class="text-muted">
+                            {{ usuario.nome }}
+                        </small>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="nomeEditar{{ usuario.id }}"
+                                class="form-label"
+                            >
+                                Nome
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nomeEditar{{ usuario.id }}"
+                                name="nome"
+                                class="form-control"
+                                value="{{ usuario.nome }}"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="loginEditar{{ usuario.id }}"
+                                class="form-label"
+                            >
+                                Usuário de acesso
+                            </label>
+
+                            <input
+                                type="text"
+                                id="loginEditar{{ usuario.id }}"
+                                name="usuario"
+                                class="form-control"
+                                value="{{ usuario.usuario }}"
+                                minlength="3"
+                                autocomplete="off"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="emailEditar{{ usuario.id }}"
+                                class="form-label"
+                            >
+                                E-mail
+                            </label>
+
+                            <input
+                                type="email"
+                                id="emailEditar{{ usuario.id }}"
+                                name="email"
+                                class="form-control"
+                                value="{{ usuario.email or '' }}"
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="perfilEditar{{ usuario.id }}"
+                                class="form-label"
+                            >
+                                Perfil
+                            </label>
+
+                            <select
+                                id="perfilEditar{{ usuario.id }}"
+                                name="perfil"
+                                class="form-select"
+                                required
+                            >
+                                {% for perfil in [
+                                    "Administrador",
+                                    "Gestor",
+                                    "Frota",
+                                    "RH",
+                                    "Motorista",
+                                    "Operador"
+                                ] %}
+                                    <option
+                                        value="{{ perfil }}"
+                                        {% if usuario.perfil == perfil %}selected{% endif %}
+                                    >
+                                        {{ perfil }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                            {% if usuario.id == current_user.id %}
+                                <div class="form-text">
+                                    Sua própria conta deve permanecer como administradora.
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row g-3 align-items-end">
+
+                        <div class="col-md-7">
+
+                            <label
+                                for="novaSenha{{ usuario.id }}"
+                                class="form-label"
+                            >
+                                Redefinir senha
+                            </label>
+
+                            <input
+                                type="password"
+                                id="novaSenha{{ usuario.id }}"
+                                name="nova_senha"
+                                class="form-control campo-nova-senha"
+                                minlength="6"
+                                autocomplete="new-password"
+                                placeholder="Deixe vazio para manter a senha atual"
+                            >
+
+                            <div class="form-text">
+                                A nova senha precisa ter pelo menos 6 caracteres.
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-5">
+
+                            <div class="form-check mb-2">
+
+                                <input
+                                    type="checkbox"
+                                    id="exigirTroca{{ usuario.id }}"
+                                    name="exigir_troca_senha"
+                                    value="1"
+                                    class="form-check-input campo-exigir-troca"
+                                    checked
+                                    disabled
+                                >
+
+                                <label
+                                    for="exigirTroca{{ usuario.id }}"
+                                    class="form-check-label"
+                                >
+                                    Exigir troca no próximo acesso
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-check-lg me-1"></i>
+                        Salvar alterações
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+{% endfor %}
+
+
+<div
+    class="modal fade"
+    id="novoUsuario"
+    tabindex="-1"
+    aria-labelledby="novoUsuarioTitulo"
+    aria-hidden="true"
+>
+    <div class="modal-dialog modal-lg">
+
+        <div class="modal-content">
+
+            <form
+                method="POST"
+                action="{{ url_for('usuarios.novo_usuario') }}"
+            >
+
+                <div class="modal-header">
+
+                    <h5
+                        class="modal-title"
+                        id="novoUsuarioTitulo"
+                    >
+                        Novo usuário
+                    </h5>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="nomeNovo"
+                                class="form-label"
+                            >
+                                Nome
+                            </label>
+
+                            <input
+                                type="text"
+                                id="nomeNovo"
+                                name="nome"
+                                class="form-control"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="usuarioNovo"
+                                class="form-label"
+                            >
+                                Usuário de acesso
+                            </label>
+
+                            <input
+                                type="text"
+                                id="usuarioNovo"
+                                name="usuario"
+                                class="form-control"
+                                minlength="3"
+                                autocomplete="off"
+                                required
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="emailNovo"
+                                class="form-label"
+                            >
+                                E-mail
+                            </label>
+
+                            <input
+                                type="email"
+                                id="emailNovo"
+                                name="email"
+                                class="form-control"
+                            >
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="perfilNovo"
+                                class="form-label"
+                            >
+                                Perfil
+                            </label>
+
+                            <select
+                                id="perfilNovo"
+                                name="perfil"
+                                class="form-select"
+                                required
+                            >
+                                <option value="Operador" selected>
+                                    Operador
+                                </option>
+
+                                <option value="Motorista">
+                                    Motorista
+                                </option>
+
+                                <option value="Frota">
+                                    Frota
+                                </option>
+
+                                <option value="RH">
+                                    RH
+                                </option>
+
+                                <option value="Gestor">
+                                    Gestor
+                                </option>
+
+                                <option value="Administrador">
+                                    Administrador
+                                </option>
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label
+                                for="senhaNovo"
+                                class="form-label"
+                            >
+                                Senha temporária
+                            </label>
+
+                            <input
+                                type="password"
+                                id="senhaNovo"
+                                name="senha"
+                                class="form-control"
+                                minlength="6"
+                                autocomplete="new-password"
+                                required
+                            >
+
+                            <div class="form-text">
+                                O usuário deverá trocar a senha no primeiro acesso.
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        <i class="bi bi-person-plus me-1"></i>
+                        Cadastrar usuário
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const formularios = document.querySelectorAll(
+        ".form-editar-usuario"
+    );
+
+    formularios.forEach(function (formulario) {
+        const campoSenha = formulario.querySelector(
+            ".campo-nova-senha"
+        );
+
+        const campoExigirTroca = formulario.querySelector(
+            ".campo-exigir-troca"
+        );
+
+        if (!campoSenha || !campoExigirTroca) {
+            return;
+        }
+
+        function atualizarCampoTroca() {
+            const possuiNovaSenha =
+                campoSenha.value.trim().length > 0;
+
+            campoExigirTroca.disabled =
+                !possuiNovaSenha;
+
+            if (!possuiNovaSenha) {
+                campoExigirTroca.checked = true;
+            }
+        }
+
+        campoSenha.addEventListener(
+            "input",
+            atualizarCampoTroca
+        );
+
+        formulario.addEventListener(
+            "submit",
+            function () {
+                if (campoSenha.value.trim()) {
+                    campoExigirTroca.disabled = false;
+                }
+            }
+        );
+
+        atualizarCampoTroca();
+    });
+});
+</script>
+
 {% endblock %}

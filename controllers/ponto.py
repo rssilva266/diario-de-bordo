@@ -32,6 +32,13 @@ TIPOS_PONTO = {
     "saida": "Saída",
 }
 
+SEQUENCIA_PONTO = (
+    "entrada",
+    "intervalo",
+    "retorno",
+    "saida",
+)
+
 EXTENSOES_IMAGEM = {"jpg", "jpeg", "png", "webp", "heic"}
 
 
@@ -85,6 +92,44 @@ def colaborador_do_usuario():
         usuario_id=current_user.id,
         ativo=True,
     ).first()
+
+
+def obter_proximo_tipo_ponto(
+    colaborador_id,
+    data_referencia,
+):
+    inicio = data_referencia.replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+
+    fim = inicio + timedelta(days=1)
+
+    quantidade_marcacoes = (
+        PontoMarcacao.query
+        .filter(
+            PontoMarcacao.empresa_id
+            == current_user.empresa_id,
+            PontoMarcacao.colaborador_id
+            == colaborador_id,
+            PontoMarcacao.capturado_em
+            >= inicio,
+            PontoMarcacao.capturado_em
+            < fim,
+        )
+        .count()
+    )
+
+    if quantidade_marcacoes >= len(
+        SEQUENCIA_PONTO
+    ):
+        return None
+
+    return SEQUENCIA_PONTO[
+        quantidade_marcacoes
+    ]
 
 
 def carregar_fonte(tamanho):
@@ -475,32 +520,265 @@ def locais_trabalho():
     return render_template("cadastros/locais_trabalho.html", locais=locais)
 
 
+
+@ponto_bp.route(
+    "/cadastros/locais-trabalho/<int:local_id>/editar",
+    methods=["POST"],
+)
+@login_required
+def editar_local_trabalho(local_id):
+    if not eh_administrador():
+        flash(
+            "Acesso permitido somente para administradores.",
+            "warning",
+        )
+        return redirect(url_for("dashboard"))
+
+    local = LocalTrabalho.query.filter_by(
+        id=local_id,
+        empresa_id=current_user.empresa_id,
+    ).first_or_404()
+
+    nome = request.form.get("nome", "").strip()
+    endereco = (
+        request.form.get("endereco", "").strip()
+        or None
+    )
+
+    latitude = parse_float(
+        request.form.get("latitude")
+    )
+
+    longitude = parse_float(
+        request.form.get("longitude")
+    )
+
+    raio_metros = int(
+        parse_float(
+            request.form.get("raio_metros")
+        )
+        or 200
+    )
+
+    if not nome:
+        flash(
+            "Informe o nome do local.",
+            "warning",
+        )
+        return redirect(
+            url_for("ponto.locais_trabalho")
+        )
+
+    if latitude is not None and not -90 <= latitude <= 90:
+        flash(
+            "A latitude deve estar entre -90 e 90.",
+            "warning",
+        )
+        return redirect(
+            url_for("ponto.locais_trabalho")
+        )
+
+    if longitude is not None and not -180 <= longitude <= 180:
+        flash(
+            "A longitude deve estar entre -180 e 180.",
+            "warning",
+        )
+        return redirect(
+            url_for("ponto.locais_trabalho")
+        )
+
+    if raio_metros < 10:
+        flash(
+            "O raio permitido deve ser de pelo menos 10 metros.",
+            "warning",
+        )
+        return redirect(
+            url_for("ponto.locais_trabalho")
+        )
+
+    local_existente = LocalTrabalho.query.filter(
+        LocalTrabalho.empresa_id
+        == current_user.empresa_id,
+        LocalTrabalho.nome == nome,
+        LocalTrabalho.id != local.id,
+    ).first()
+
+    if local_existente:
+        flash(
+            "Já existe outro local com esse nome.",
+            "warning",
+        )
+        return redirect(
+            url_for("ponto.locais_trabalho")
+        )
+
+    try:
+        local.nome = nome
+        local.endereco = endereco
+        local.latitude = latitude
+        local.longitude = longitude
+        local.raio_metros = raio_metros
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+
+        current_app.logger.exception(
+            "Erro ao editar local de trabalho"
+        )
+
+        flash(
+            "Não foi possível atualizar o local de trabalho.",
+            "danger",
+        )
+
+        return redirect(
+            url_for("ponto.locais_trabalho")
+        )
+
+    flash(
+        "Local de trabalho atualizado com sucesso.",
+        "success",
+    )
+
+    return redirect(
+        url_for("ponto.locais_trabalho")
+    )
+
+
+@ponto_bp.route(
+    "/cadastros/locais-trabalho/<int:local_id>/alternar-status",
+    methods=["POST"],
+)
+@login_required
+def alternar_status_local_trabalho(local_id):
+    if not eh_administrador():
+        flash(
+            "Acesso permitido somente para administradores.",
+            "warning",
+        )
+        return redirect(url_for("dashboard"))
+
+    local = LocalTrabalho.query.filter_by(
+        id=local_id,
+        empresa_id=current_user.empresa_id,
+    ).first_or_404()
+
+    try:
+        local.ativo = not local.ativo
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+
+        current_app.logger.exception(
+            "Erro ao alterar status do local de trabalho"
+        )
+
+        flash(
+            "Não foi possível alterar o status do local.",
+            "danger",
+        )
+
+        return redirect(
+            url_for("ponto.locais_trabalho")
+        )
+
+    estado = (
+        "ativado"
+        if local.ativo
+        else "desativado"
+    )
+
+    flash(
+        f"Local de trabalho {estado} com sucesso.",
+        "success",
+    )
+
+    return redirect(
+        url_for("ponto.locais_trabalho")
+    )
+
+
 @ponto_bp.route("/ponto-eletronico")
 @login_required
 def coleta():
     colaborador = colaborador_do_usuario()
-    if colaborador is None and eh_administrador():
-        colaborador = Colaborador.query.filter_by(
-            empresa_id=current_user.empresa_id,
-            ativo=True,
-        ).order_by(Colaborador.nome.asc()).first()
 
-    hoje_inicio = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    hoje_fim = hoje_inicio + timedelta(days=1)
+    if (
+        colaborador is None
+        and eh_administrador()
+    ):
+        colaborador = (
+            Colaborador.query
+            .filter_by(
+                empresa_id=current_user.empresa_id,
+                ativo=True,
+            )
+            .order_by(
+                Colaborador.nome.asc()
+            )
+            .first()
+        )
+
+    agora = datetime.now()
+
+    hoje_inicio = agora.replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+
+    hoje_fim = (
+        hoje_inicio
+        + timedelta(days=1)
+    )
+
     marcacoes = []
+
     if colaborador:
-        marcacoes = PontoMarcacao.query.filter(
-            PontoMarcacao.empresa_id == current_user.empresa_id,
-            PontoMarcacao.colaborador_id == colaborador.id,
-            PontoMarcacao.capturado_em >= hoje_inicio,
-            PontoMarcacao.capturado_em < hoje_fim,
-        ).order_by(PontoMarcacao.capturado_em.asc()).all()
+        marcacoes = (
+            PontoMarcacao.query
+            .filter(
+                PontoMarcacao.empresa_id
+                == current_user.empresa_id,
+                PontoMarcacao.colaborador_id
+                == colaborador.id,
+                PontoMarcacao.capturado_em
+                >= hoje_inicio,
+                PontoMarcacao.capturado_em
+                < hoje_fim,
+            )
+            .order_by(
+                PontoMarcacao.capturado_em.asc()
+            )
+            .all()
+        )
+
+    proximo_tipo = None
+
+    if (
+        colaborador
+        and len(marcacoes)
+        < len(SEQUENCIA_PONTO)
+    ):
+        proximo_tipo = SEQUENCIA_PONTO[
+            len(marcacoes)
+        ]
 
     return render_template(
         "ponto/coleta.html",
         colaborador=colaborador,
         marcacoes=marcacoes,
         tipos=TIPOS_PONTO,
+        proximo_tipo=proximo_tipo,
+        proximo_tipo_nome=(
+            TIPOS_PONTO.get(proximo_tipo)
+            if proximo_tipo
+            else None
+        ),
     )
 
 
@@ -529,6 +807,198 @@ def gestao():
     )
 
 
+
+@ponto_bp.route(
+    "/ponto-eletronico/gestao/<int:marcacao_id>/editar",
+    methods=["POST"],
+)
+@login_required
+def editar_marcacao_ponto(marcacao_id):
+    if not eh_administrador():
+        flash(
+            "A correção de marcações é permitida "
+            "somente para administradores.",
+            "warning",
+        )
+
+        return redirect(
+            url_for("ponto.gestao")
+        )
+
+    marcacao = (
+        PontoMarcacao.query
+        .filter_by(
+            id=marcacao_id,
+            empresa_id=current_user.empresa_id,
+        )
+        .first_or_404()
+    )
+
+    tipo = (
+        request.form
+        .get("tipo", "")
+        .strip()
+        .lower()
+    )
+
+    data_hora_texto = (
+        request.form
+        .get("capturado_em", "")
+        .strip()
+    )
+
+    motivo = (
+        request.form
+        .get("motivo", "")
+        .strip()
+    )
+
+    if tipo not in TIPOS_PONTO:
+        flash(
+            "Selecione um tipo de marcação válido.",
+            "warning",
+        )
+
+        return redirect(
+            request.referrer
+            or url_for("ponto.gestao")
+        )
+
+    try:
+        nova_data_hora = datetime.fromisoformat(
+            data_hora_texto
+        )
+
+    except (TypeError, ValueError):
+        flash(
+            "Informe uma data e um horário válidos.",
+            "warning",
+        )
+
+        return redirect(
+            request.referrer
+            or url_for("ponto.gestao")
+        )
+
+    if len(motivo) < 5:
+        flash(
+            "Informe o motivo da correção "
+            "com pelo menos 5 caracteres.",
+            "warning",
+        )
+
+        return redirect(
+            request.referrer
+            or url_for("ponto.gestao")
+        )
+
+    inicio_dia = nova_data_hora.replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+
+    fim_dia = (
+        inicio_dia
+        + timedelta(days=1)
+    )
+
+    marcacao_duplicada = (
+        PontoMarcacao.query
+        .filter(
+            PontoMarcacao.empresa_id
+            == current_user.empresa_id,
+            PontoMarcacao.colaborador_id
+            == marcacao.colaborador_id,
+            PontoMarcacao.tipo
+            == tipo,
+            PontoMarcacao.capturado_em
+            >= inicio_dia,
+            PontoMarcacao.capturado_em
+            < fim_dia,
+            PontoMarcacao.id
+            != marcacao.id,
+        )
+        .first()
+    )
+
+    if marcacao_duplicada:
+        flash(
+            "Este colaborador já possui uma marcação "
+            f"de {TIPOS_PONTO[tipo]} nessa data.",
+            "warning",
+        )
+
+        return redirect(
+            request.referrer
+            or url_for("ponto.gestao")
+        )
+
+    tipo_anterior = marcacao.tipo
+    data_hora_anterior = marcacao.capturado_em
+
+    responsavel = (
+        current_user.nome
+        or current_user.usuario
+    )
+
+    descricao_ajuste = (
+        "\n"
+        f"[CORREÇÃO EM "
+        f"{datetime.now().strftime('%d/%m/%Y %H:%M:%S')} "
+        f"POR {responsavel}] "
+        f"{TIPOS_PONTO.get(tipo_anterior, tipo_anterior)} "
+        f"em {data_hora_anterior.strftime('%d/%m/%Y %H:%M:%S')} "
+        f"alterado para "
+        f"{TIPOS_PONTO.get(tipo, tipo)} "
+        f"em {nova_data_hora.strftime('%d/%m/%Y %H:%M:%S')}. "
+        f"Motivo: {motivo}"
+    )
+
+    try:
+        marcacao.tipo = tipo
+        marcacao.capturado_em = nova_data_hora
+
+        marcacao.observacao = (
+            f"{marcacao.observacao or ''}"
+            f"{descricao_ajuste}"
+        ).strip()
+
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+
+        current_app.logger.exception(
+            "Erro ao corrigir marcação do ponto"
+        )
+
+        flash(
+            "Não foi possível atualizar a marcação.",
+            "danger",
+        )
+
+        return redirect(
+            request.referrer
+            or url_for("ponto.gestao")
+        )
+
+    flash(
+        "Marcação corrigida com sucesso.",
+        "success",
+    )
+
+    return redirect(
+        url_for(
+            "ponto.gestao",
+            data=nova_data_hora.strftime(
+                "%Y-%m-%d"
+            ),
+        )
+    )
+
+
 @ponto_bp.route("/api/ponto/registrar", methods=["POST"])
 @login_required
 def api_registrar():
@@ -545,24 +1015,68 @@ def api_registrar():
     if colaborador is None:
         return jsonify({"ok": False, "erro": "Usuário não vinculado a um colaborador."}), 403
 
-    tipo = request.form.get("tipo", "").strip().lower()
-    if tipo not in TIPOS_PONTO:
-        return jsonify({"ok": False, "erro": "Tipo de marcação inválido."}), 400
+    client_uuid = (
+        request.form
+        .get("client_uuid", "")
+        .strip()
+        or str(uuid.uuid4())
+    )
 
-    client_uuid = request.form.get("client_uuid", "").strip() or str(uuid.uuid4())
-    existente = PontoMarcacao.query.filter_by(client_uuid=client_uuid).first()
+    existente = (
+        PontoMarcacao.query
+        .filter_by(
+            client_uuid=client_uuid
+        )
+        .first()
+    )
+
     if existente:
         return jsonify({
             "ok": True,
             "duplicado": True,
             "id": existente.id,
-            "capturado_em": existente.capturado_em.isoformat(),
+            "tipo": TIPOS_PONTO.get(
+                existente.tipo,
+                existente.tipo,
+            ),
+            "capturado_em": (
+                existente
+                .capturado_em
+                .isoformat()
+            ),
         })
 
-    latitude = parse_float(request.form.get("latitude"))
-    longitude = parse_float(request.form.get("longitude"))
-    precisao = parse_float(request.form.get("precisao_metros"))
-    capturado_em = parse_datetime(request.form.get("capturado_em"))
+    latitude = parse_float(
+        request.form.get("latitude")
+    )
+
+    longitude = parse_float(
+        request.form.get("longitude")
+    )
+
+    precisao = parse_float(
+        request.form.get(
+            "precisao_metros"
+        )
+    )
+
+    capturado_em = parse_datetime(
+        request.form.get("capturado_em")
+    )
+
+    tipo = obter_proximo_tipo_ponto(
+        colaborador_id=colaborador.id,
+        data_referencia=capturado_em,
+    )
+
+    if tipo is None:
+        return jsonify({
+            "ok": False,
+            "erro": (
+                "As quatro marcações do dia "
+                "já foram registradas."
+            ),
+        }), 409
 
     local = colaborador.local_trabalho
     distancia = None
