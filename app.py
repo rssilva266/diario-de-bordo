@@ -19,7 +19,7 @@ from controllers.diario import diario_bp
 from controllers.manutencoes import manutencoes_bp
 from controllers.motoristas import motoristas_bp
 from controllers.obras import obras_bp
-from controllers.ponto import ponto_bp
+from controllers.ponto_backup import ponto_bp
 from controllers.relatorios import relatorios_bp
 from controllers.sistema import sistema_bp
 from controllers.usuarios import usuarios_bp

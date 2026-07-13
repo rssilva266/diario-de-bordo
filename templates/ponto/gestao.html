@@ -1,3 +1,136 @@
 {% extends 'layout/base.html' %}
-{% block titulo %}<div class="d-flex justify-content-between align-items-center"><div><h1>Gestão do Ponto</h1><small class="text-muted">Marcações recebidas e situação de localização</small></div><form class="d-flex gap-2"><input class="form-control" type="date" name="data" value="{{ data_filtro.isoformat() }}"><button class="btn btn-primary">Filtrar</button></form></div>{% endblock %}
-{% block conteudo %}<div class="card"><div class="card-body table-responsive"><table class="table table-hover align-middle"><thead><tr><th>Horário</th><th>Colaborador</th><th>Tipo</th><th>Localização</th><th>Precisão</th><th>Dispositivo</th><th>Foto</th></tr></thead><tbody>{% for m in marcacoes %}<tr><td>{{ m.capturado_em.strftime('%d/%m/%Y %H:%M:%S') }}</td><td><strong>{{ m.colaborador.nome }}</strong></td><td>{{ tipos.get(m.tipo, m.tipo) }}</td><td>{% if m.dentro_geocerca is sameas true %}<span class="badge bg-success">Dentro da área</span>{% elif m.dentro_geocerca is sameas false %}<span class="badge bg-danger">Fora da área{% if m.distancia_local_metros %} · {{ '%.0f'|format(m.distancia_local_metros) }} m{% endif %}</span>{% else %}<span class="badge bg-secondary">Não validado</span>{% endif %}</td><td>{{ '%.0f m'|format(m.precisao_metros) if m.precisao_metros else '-' }}</td><td>{{ m.dispositivo_info or '-' }}</td><td><a class="btn btn-sm btn-outline-primary" target="_blank" href="{{ url_for('static', filename=m.foto_path) }}"><i class="bi bi-image"></i> Ver</a></td></tr>{% else %}<tr><td colspan="7" class="text-center text-muted py-4">Nenhuma marcação no período.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}
+
+{% block titulo %}
+<div class="d-flex justify-content-between align-items-center">
+    <div>
+        <h1>Gestão do Ponto</h1>
+        <small class="text-muted">
+            Marcações recebidas e situação de localização
+        </small>
+    </div>
+
+    <form class="d-flex gap-2">
+        <input
+            class="form-control"
+            type="date"
+            name="data"
+            value="{{ data_filtro.isoformat() }}"
+        >
+        <button class="btn btn-primary">Filtrar</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block conteudo %}
+<div class="card">
+    <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Horário</th>
+                    <th>Colaborador</th>
+                    <th>Tipo</th>
+                    <th>Localização</th>
+                    <th>Precisão</th>
+                    <th>Coordenadas</th>
+                    <th>Foto</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for m in marcacoes %}
+                <tr>
+                    <td>
+                        {{ m.capturado_em.strftime('%d/%m/%Y %H:%M:%S') }}
+                    </td>
+
+                    <td>
+                        <strong>{{ m.colaborador.nome }}</strong>
+                    </td>
+
+                    <td>
+                        {{ tipos.get(m.tipo, m.tipo) }}
+                    </td>
+
+                    <td>
+                        {% if m.dentro_geocerca is sameas true %}
+                        <span class="badge bg-success">
+                            Dentro da área
+                        </span>
+                        {% elif m.dentro_geocerca is sameas false %}
+                        <span class="badge bg-danger">
+                            Fora da área
+                            {% if m.distancia_local_metros %}
+                                ·
+                                {% if m.distancia_local_metros >= 1000 %}
+                                    {{ '%.2f'|format(m.distancia_local_metros / 1000) }} km
+                                {% else %}
+                                    {{ '%.0f'|format(m.distancia_local_metros) }} m
+                                {% endif %}
+                            {% endif %}
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">
+                            Não validado
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ '%.0f m'|format(m.precisao_metros)
+                           if m.precisao_metros is not none
+                           else '-' }}
+                    </td>
+
+                    <td>
+                        {% if m.latitude is not none and m.longitude is not none %}
+                        <div class="small text-nowrap">
+                            {{ '%.6f'|format(m.latitude) }},
+                            {{ '%.6f'|format(m.longitude) }}
+                        </div>
+
+                        <a
+                            class="btn btn-sm btn-outline-success mt-1"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            href="https://www.google.com/maps?q={{ m.latitude }},{{ m.longitude }}"
+                        >
+                            <i class="bi bi-geo-alt"></i>
+                            Ver no mapa
+                        </a>
+                        {% else %}
+                        <span class="text-muted">Não informadas</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if m.foto_path %}
+                        <a
+                            class="btn btn-sm btn-outline-primary"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            href="{{ url_for('static', filename=m.foto_path) }}"
+                        >
+                            <i class="bi bi-image"></i>
+                            Ver
+                        </a>
+                        {% else %}
+                        <span class="text-muted">Sem foto</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td
+                        colspan="7"
+                        class="text-center text-muted py-4"
+                    >
+                        Nenhuma marcação no período.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
