@@ -9,3 +9,21 @@ database/*backup*.db
 static/uploads/
 backups/*.zip
 backups/restore_*/
+
+# Pacotes e instaladores temporários
+backups/
+*.zip
+*.tar.gz
+app.py.backup*
+pacote-*/
+servidor/
+instalar_*.ps1
+LEIA-ME-*.txt
+
+# Arquivos locais do Flutter
+mobile/.dart_tool/
+mobile/build/
+mobile/coverage/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties

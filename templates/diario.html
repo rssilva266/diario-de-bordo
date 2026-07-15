@@ -268,6 +268,16 @@
                     Filtrar
                 </button>
 
+                <button
+                    type="submit"
+                    class="btn btn-outline-danger"
+                    formaction="{{ url_for('diario.exportar_pdf') }}"
+                    title="Exportar os diários exibidos pelos filtros atuais"
+                >
+                    <i class="bi bi-file-earmark-pdf me-1"></i>
+                    Exportar PDF
+                </button>
+
                 <a
                     href="{{ url_for('diario.listar_diarios') }}"
                     class="btn btn-outline-secondary"
@@ -420,6 +430,18 @@
 
                             <td class="text-end">
 
+                                {% if diario.status == "Em andamento" %}
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm btn-success me-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalFinalizarDiario{{ diario.id }}"
+                                    >
+                                        <i class="bi bi-check-circle"></i>
+                                        Finalizar
+                                    </button>
+                                {% endif %}
+
                                 <button
                                     type="button"
                                     class="btn btn-sm btn-outline-primary"
@@ -477,7 +499,8 @@
             <form
                 method="POST"
                 action="{{ url_for('diario.novo_diario') }}"
-                class="form-diario"
+                class="form-diario form-novo-diario"
+                enctype="multipart/form-data"
             >
 
                 <div class="modal-header">
@@ -545,11 +568,19 @@
                                     <option
                                         value="{{ motorista.id }}"
                                         data-veiculo-id="{{ motorista.veiculo_id or '' }}"
+                                        data-diario-aberto="{% if motorista.id in motoristas_com_diario_aberto or motorista.veiculo_id in veiculos_com_diario_aberto %}1{% else %}0{% endif %}"
+                                        {% if motorista.id in motoristas_com_diario_aberto or motorista.veiculo_id in veiculos_com_diario_aberto %}
+                                            disabled
+                                        {% endif %}
                                     >
                                         {{ motorista.nome }}
 
                                         {% if motorista.veiculo %}
                                             — {{ motorista.veiculo.placa }}
+                                        {% endif %}
+
+                                        {% if motorista.id in motoristas_com_diario_aberto or motorista.veiculo_id in veiculos_com_diario_aberto %}
+                                            — indisponível: diário em andamento
                                         {% endif %}
                                     </option>
                                 {% endfor %}
@@ -570,6 +601,7 @@
                                 id="veiculoNovo"
                                 name="veiculo_id"
                                 class="form-select campo-veiculo"
+                                aria-describedby="ajudaVeiculoNovo"
                                 required
                             >
                                 <option value="">
@@ -581,11 +613,17 @@
                                         value="{{ veiculo.id }}"
                                         data-km="{{ veiculo.km_atual }}"
                                         data-obra-id="{{ veiculo.obra_id or '' }}"
+                                        data-combustivel="{{ veiculo.combustivel or '' }}"
+                                        data-diario-aberto="{% if veiculo.id in veiculos_com_diario_aberto %}1{% else %}0{% endif %}"
                                     >
                                         {{ veiculo.placa }} — {{ veiculo.modelo }}
                                     </option>
                                 {% endfor %}
                             </select>
+
+                            <div id="ajudaVeiculoNovo" class="form-text">
+                                Preenchido pelo vínculo do motorista.
+                            </div>
 
                         </div>
 
@@ -664,7 +702,7 @@
 
                     <div class="row">
 
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-6 mb-3">
 
                             <label
                                 for="horaSaidaNovo"
@@ -678,12 +716,13 @@
                                 id="horaSaidaNovo"
                                 name="hora_saida"
                                 class="form-control"
+                                value="{{ hora_atual }}"
                                 required
                             >
 
                         </div>
 
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-6 mb-3">
 
                             <label
                                 for="kmInicialNovo"
@@ -703,48 +742,13 @@
 
                         </div>
 
-                        <div class="col-md-3 mb-3">
-
-                            <label
-                                for="horaRetornoNovo"
-                                class="form-label"
-                            >
-                                Hora de retorno
-                            </label>
-
-                            <input
-                                type="time"
-                                id="horaRetornoNovo"
-                                name="hora_retorno"
-                                class="form-control campo-hora-retorno"
-                            >
-
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-
-                            <label
-                                for="kmFinalNovo"
-                                class="form-label"
-                            >
-                                KM final
-                            </label>
-
-                            <input
-                                type="number"
-                                id="kmFinalNovo"
-                                name="km_final"
-                                class="form-control campo-km-final"
-                                min="0"
-                            >
-
-                        </div>
-
                     </div>
 
-                    <div class="form-text mb-3">
-                        Para deixar o diário em andamento, mantenha a hora
-                        de retorno e a KM final vazias.
+                    <div class="alert alert-info py-2 mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        O diário será iniciado como <strong>Em andamento</strong>.
+                        A chegada e o KM final serão informados no botão
+                        <strong>Finalizar</strong>.
                     </div>
 
                     <div class="mb-3">
@@ -785,6 +789,179 @@
                             placeholder="Avarias, atrasos, problemas mecânicos ou observações"
                         ></textarea>
 
+                    </div>
+
+                    <div class="border rounded-3 p-3 bg-light-subtle">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="bi bi-fuel-pump text-primary me-1"></i>
+                                    Abastecimento na saída
+                                </h6>
+                                <div class="small text-muted">
+                                    O registro será enviado também para o módulo Abastecimentos.
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="fw-semibold">Houve abastecimento?</span>
+                                <div class="form-check form-check-inline mb-0">
+                                    <input
+                                        class="form-check-input campo-houve-abastecimento"
+                                        type="radio"
+                                        name="houve_abastecimento"
+                                        id="abastecimentoNao"
+                                        value="nao"
+                                        checked
+                                    >
+                                    <label class="form-check-label" for="abastecimentoNao">Não</label>
+                                </div>
+                                <div class="form-check form-check-inline mb-0">
+                                    <input
+                                        class="form-check-input campo-houve-abastecimento"
+                                        type="radio"
+                                        name="houve_abastecimento"
+                                        id="abastecimentoSim"
+                                        value="sim"
+                                    >
+                                    <label class="form-check-label" for="abastecimentoSim">Sim</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="campos-abastecimento d-none">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="postoAbastecimento" class="form-label">
+                                        Posto ou fornecedor
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="postoAbastecimento"
+                                        name="posto_abastecimento"
+                                        class="form-control obrigatorio-abastecimento"
+                                        maxlength="150"
+                                    >
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="combustivelAbastecimento" class="form-label">
+                                        Combustível
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="combustivelAbastecimento"
+                                        class="form-control campo-combustivel"
+                                        placeholder="Preenchido pelo veículo"
+                                        readonly
+                                    >
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="numeroNotaAbastecimento" class="form-label">
+                                        Número do cupom/nota
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="numeroNotaAbastecimento"
+                                        name="numero_nota_abastecimento"
+                                        class="form-control"
+                                        maxlength="80"
+                                    >
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="litrosAbastecimento" class="form-label">
+                                        Quantidade de litros
+                                    </label>
+                                    <div class="input-group">
+                                        <input
+                                            type="number"
+                                            id="litrosAbastecimento"
+                                            name="litros_abastecimento"
+                                            class="form-control campo-litros obrigatorio-abastecimento"
+                                            min="0.001"
+                                            step="0.001"
+                                        >
+                                        <span class="input-group-text">L</span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="valorLitroAbastecimento" class="form-label">
+                                        Valor por litro
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        <input
+                                            type="number"
+                                            id="valorLitroAbastecimento"
+                                            name="valor_litro_abastecimento"
+                                            class="form-control campo-valor-litro obrigatorio-abastecimento"
+                                            min="0.001"
+                                            step="0.001"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="totalAbastecimento" class="form-label">
+                                        Valor total calculado
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="totalAbastecimento"
+                                        class="form-control campo-valor-total fw-semibold"
+                                        value="R$ 0,00"
+                                        readonly
+                                    >
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="fotoOdometro" class="form-label">
+                                        Foto do odômetro
+                                    </label>
+                                    <input
+                                        type="file"
+                                        id="fotoOdometro"
+                                        name="foto_odometro"
+                                        class="form-control obrigatorio-abastecimento"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        capture="environment"
+                                    >
+                                    <div class="form-text">JPG, PNG ou WEBP.</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="cupomFiscal" class="form-label">
+                                        Foto do cupom fiscal
+                                    </label>
+                                    <input
+                                        type="file"
+                                        id="cupomFiscal"
+                                        name="cupom_fiscal"
+                                        class="form-control obrigatorio-abastecimento"
+                                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                                        capture="environment"
+                                    >
+                                    <div class="form-text">JPG, PNG, WEBP ou PDF.</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="tanque_cheio_abastecimento"
+                                            id="tanqueCheioAbastecimento"
+                                        >
+                                        <label class="form-check-label" for="tanqueCheioAbastecimento">
+                                            Tanque completo após o abastecimento
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
@@ -1002,7 +1179,7 @@
 
                     <div class="row">
 
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-6 mb-3">
 
                             <label class="form-label">
                                 Hora de saída
@@ -1018,7 +1195,7 @@
 
                         </div>
 
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-6 mb-3">
 
                             <label class="form-label">
                                 KM inicial
@@ -1035,37 +1212,17 @@
 
                         </div>
 
-                        <div class="col-md-3 mb-3">
+                    </div>
 
-                            <label class="form-label">
-                                Hora de retorno
-                            </label>
-
-                            <input
-                                type="time"
-                                name="hora_retorno"
-                                class="form-control campo-hora-retorno"
-                                value="{% if diario.hora_retorno %}{{ diario.hora_retorno.strftime('%H:%M') }}{% endif %}"
-                            >
-
-                        </div>
-
-                        <div class="col-md-3 mb-3">
-
-                            <label class="form-label">
-                                KM final
-                            </label>
-
-                            <input
-                                type="number"
-                                name="km_final"
-                                class="form-control campo-km-final"
-                                min="0"
-                                value="{% if diario.km_final is not none %}{{ diario.km_final }}{% endif %}"
-                            >
-
-                        </div>
-
+                    <div class="alert alert-light border py-2 mb-3">
+                        {% if diario.status == "Em andamento" %}
+                            Para registrar a chegada e o KM final, use o botão
+                            <strong>Finalizar</strong> na tabela.
+                        {% else %}
+                            Finalizado às
+                            <strong>{{ diario.hora_retorno.strftime('%H:%M') }}</strong>
+                            com <strong>{{ diario.km_final }} km</strong>.
+                        {% endif %}
                     </div>
 
                     <div class="mb-3">
@@ -1130,137 +1287,299 @@
 
 {% endfor %}
 
+<!-- MODAIS DE FINALIZAÇÃO -->
+{% for diario in diarios %}
+    {% if diario.status == "Em andamento" %}
+        <div
+            class="modal fade"
+            id="modalFinalizarDiario{{ diario.id }}"
+            tabindex="-1"
+            aria-labelledby="modalFinalizarDiarioTitulo{{ diario.id }}"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form
+                        method="POST"
+                        action="{{ url_for('diario.finalizar_diario', diario_id=diario.id) }}"
+                        class="form-finalizar-diario"
+                    >
+                        <div class="modal-header">
+                            <h5
+                                class="modal-title"
+                                id="modalFinalizarDiarioTitulo{{ diario.id }}"
+                            >
+                                Finalizar diário de bordo
+                            </h5>
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal"
+                                aria-label="Fechar"
+                            ></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="alert alert-primary py-2">
+                                <div class="fw-semibold">
+                                    {{ diario.motorista.nome }} · {{ diario.veiculo.placa }}
+                                </div>
+                                <div class="small">
+                                    {{ diario.origem }} → {{ diario.destino }} ·
+                                    saída {{ diario.hora_saida.strftime('%H:%M') }} ·
+                                    KM inicial {{ diario.km_inicial }}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label
+                                    for="horaChegada{{ diario.id }}"
+                                    class="form-label"
+                                >
+                                    Hora de chegada
+                                </label>
+                                <input
+                                    type="time"
+                                    id="horaChegada{{ diario.id }}"
+                                    name="hora_chegada"
+                                    class="form-control"
+                                    value="{{ hora_atual }}"
+                                    required
+                                >
+                            </div>
+
+                            <div>
+                                <label
+                                    for="kmFinal{{ diario.id }}"
+                                    class="form-label"
+                                >
+                                    KM final
+                                </label>
+                                <input
+                                    type="number"
+                                    id="kmFinal{{ diario.id }}"
+                                    name="km_final"
+                                    class="form-control"
+                                    min="{{ diario.km_inicial }}"
+                                    placeholder="Mínimo {{ diario.km_inicial }}"
+                                    required
+                                >
+                                <div class="form-text">
+                                    Deve ser igual ou maior que o KM inicial.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal"
+                            >
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i>
+                                Confirmar finalização
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endfor %}
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    function converterNumero(valor) {
+        const texto = String(valor || "").trim();
 
-    document
-        .querySelectorAll(".form-diario")
-        .forEach(function (formulario) {
+        if (!texto) {
+            return 0;
+        }
 
-            const campoMotorista = formulario.querySelector(
-                ".campo-motorista"
-            );
+        if (texto.includes(",")) {
+            return Number(
+                texto.replace(/\./g, "").replace(",", ".")
+            ) || 0;
+        }
 
-            const campoVeiculo = formulario.querySelector(
-                ".campo-veiculo"
-            );
+        return Number(texto) || 0;
+    }
 
-            const campoObra = formulario.querySelector(
-                ".campo-obra"
-            );
-
-            const campoKmInicial = formulario.querySelector(
-                ".campo-km-inicial"
-            );
-
-            const campoKmFinal = formulario.querySelector(
-                ".campo-km-final"
-            );
-
-            const campoHoraRetorno = formulario.querySelector(
-                ".campo-hora-retorno"
-            );
-
-            function atualizarDadosVeiculo() {
-                if (!campoVeiculo) {
-                    return;
-                }
-
-                const opcao = campoVeiculo.options[
-                    campoVeiculo.selectedIndex
-                ];
-
-                if (!opcao || !opcao.value) {
-                    return;
-                }
-
-                const kmAtual = opcao.dataset.km || "";
-                const obraId = opcao.dataset.obraId || "";
-
-                if (
-                    campoKmInicial
-                    && !campoKmInicial.value
-                ) {
-                    campoKmInicial.value = kmAtual;
-                }
-
-                if (
-                    campoObra
-                    && !campoObra.value
-                    && obraId
-                ) {
-                    campoObra.value = obraId;
-                }
-            }
-
-            if (campoMotorista) {
-                campoMotorista.addEventListener(
-                    "change",
-                    function () {
-                        const opcao = campoMotorista.options[
-                            campoMotorista.selectedIndex
-                        ];
-
-                        const veiculoId = (
-                            opcao.dataset.veiculoId
-                            || ""
-                        );
-
-                        if (
-                            veiculoId
-                            && campoVeiculo
-                        ) {
-                            campoVeiculo.value = veiculoId;
-                            atualizarDadosVeiculo();
-                        }
-                    }
-                );
-            }
-
-            if (campoVeiculo) {
-                campoVeiculo.addEventListener(
-                    "change",
-                    atualizarDadosVeiculo
-                );
-            }
-
-            if (campoKmInicial && campoKmFinal) {
-                campoKmInicial.addEventListener(
-                    "input",
-                    function () {
-                        campoKmFinal.min = (
-                            campoKmInicial.value
-                            || "0"
-                        );
-                    }
-                );
-            }
-
-            formulario.addEventListener(
-                "submit",
-                function (event) {
-                    const possuiRetorno = Boolean(
-                        campoHoraRetorno
-                        && campoHoraRetorno.value
-                    );
-
-                    const possuiKmFinal = Boolean(
-                        campoKmFinal
-                        && campoKmFinal.value
-                    );
-
-                    if (possuiRetorno !== possuiKmFinal) {
-                        event.preventDefault();
-
-                        alert(
-                            "Informe a hora de retorno e a KM final para concluir o diário."
-                        );
-                    }
-                }
-            );
-
+    function formatarDinheiro(valor) {
+        return valor.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         });
+    }
 
+    document.querySelectorAll(".form-diario").forEach(function (formulario) {
+        const formularioNovo = formulario.classList.contains("form-novo-diario");
+        const campoMotorista = formulario.querySelector(".campo-motorista");
+        const campoVeiculo = formulario.querySelector(".campo-veiculo");
+        const campoObra = formulario.querySelector(".campo-obra");
+        const campoKmInicial = formulario.querySelector(".campo-km-inicial");
+        const campoCombustivel = formulario.querySelector(".campo-combustivel");
+        const camposAbastecimento = formulario.querySelector(".campos-abastecimento");
+        const campoLitros = formulario.querySelector(".campo-litros");
+        const campoValorLitro = formulario.querySelector(".campo-valor-litro");
+        const campoValorTotal = formulario.querySelector(".campo-valor-total");
+
+        function calcularTotal() {
+            if (!campoValorTotal) {
+                return;
+            }
+
+            const litros = converterNumero(campoLitros ? campoLitros.value : 0);
+            const valorLitro = converterNumero(
+                campoValorLitro ? campoValorLitro.value : 0
+            );
+
+            campoValorTotal.value = formatarDinheiro(litros * valorLitro);
+        }
+
+        function atualizarDadosVeiculo(forcarPreenchimento) {
+            if (!campoVeiculo) {
+                return;
+            }
+
+            const opcao = campoVeiculo.options[campoVeiculo.selectedIndex];
+
+            if (!opcao || !opcao.value) {
+                if (campoCombustivel) {
+                    campoCombustivel.value = "";
+                }
+                return;
+            }
+
+            const kmAtual = opcao.dataset.km || "";
+            const obraId = opcao.dataset.obraId || "";
+            const combustivel = opcao.dataset.combustivel || "";
+
+            if (campoKmInicial && (forcarPreenchimento || !campoKmInicial.value)) {
+                campoKmInicial.value = kmAtual;
+            }
+
+            if (campoObra && obraId && (forcarPreenchimento || !campoObra.value)) {
+                campoObra.value = obraId;
+            }
+
+            if (campoCombustivel) {
+                campoCombustivel.value = combustivel;
+            }
+        }
+
+        function vincularVeiculoDoMotorista() {
+            if (!campoMotorista || !campoVeiculo) {
+                return;
+            }
+
+            const opcao = campoMotorista.options[campoMotorista.selectedIndex];
+            const veiculoId = opcao ? (opcao.dataset.veiculoId || "") : "";
+
+            campoVeiculo.value = veiculoId;
+
+            if (formularioNovo) {
+                campoVeiculo.setCustomValidity(
+                    veiculoId ? "" : "O motorista não possui veículo vinculado."
+                );
+            }
+
+            atualizarDadosVeiculo(true);
+        }
+
+        function alternarAbastecimento() {
+            if (!camposAbastecimento) {
+                return;
+            }
+
+            const selecionado = formulario.querySelector(
+                'input[name="houve_abastecimento"]:checked'
+            );
+            const mostrar = Boolean(selecionado && selecionado.value === "sim");
+
+            camposAbastecimento.classList.toggle("d-none", !mostrar);
+
+            formulario.querySelectorAll(".obrigatorio-abastecimento")
+                .forEach(function (campo) {
+                    campo.required = mostrar;
+                });
+
+            calcularTotal();
+        }
+
+        if (formularioNovo && campoVeiculo) {
+            campoVeiculo.style.pointerEvents = "none";
+            campoVeiculo.tabIndex = -1;
+            campoVeiculo.setAttribute("aria-readonly", "true");
+        }
+
+        if (campoMotorista) {
+            campoMotorista.addEventListener("change", vincularVeiculoDoMotorista);
+        }
+
+        if (campoVeiculo && !formularioNovo) {
+            campoVeiculo.addEventListener("change", function () {
+                atualizarDadosVeiculo(false);
+            });
+        }
+
+        formulario.querySelectorAll(".campo-houve-abastecimento")
+            .forEach(function (campo) {
+                campo.addEventListener("change", alternarAbastecimento);
+            });
+
+        if (campoLitros) {
+            campoLitros.addEventListener("input", calcularTotal);
+        }
+
+        if (campoValorLitro) {
+            campoValorLitro.addEventListener("input", calcularTotal);
+        }
+
+        if (formularioNovo && campoMotorista && !campoMotorista.value) {
+            const opcoesDisponiveis = Array.from(campoMotorista.options).filter(
+                function (opcao) {
+                    return opcao.value && !opcao.disabled;
+                }
+            );
+
+            if (opcoesDisponiveis.length === 1) {
+                campoMotorista.value = opcoesDisponiveis[0].value;
+                vincularVeiculoDoMotorista();
+            }
+        } else {
+            atualizarDadosVeiculo(false);
+        }
+
+        alternarAbastecimento();
+
+        formulario.addEventListener("submit", function (event) {
+            if (!formularioNovo || !campoVeiculo) {
+                return;
+            }
+
+            const opcaoVeiculo = campoVeiculo.options[campoVeiculo.selectedIndex];
+
+            if (!campoVeiculo.value) {
+                event.preventDefault();
+                campoVeiculo.reportValidity();
+                return;
+            }
+
+            if (opcaoVeiculo && opcaoVeiculo.dataset.diarioAberto === "1") {
+                event.preventDefault();
+                alert(
+                    "O veículo já possui um diário em andamento. " +
+                    "Finalize-o antes de iniciar outro."
+                );
+            }
+        });
+    });
 });
 </script>
 

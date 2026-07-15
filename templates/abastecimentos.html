@@ -301,7 +301,7 @@
                         <th>Valor</th>
                         <th>KM</th>
                         <th>Obra</th>
-                        <th>Comprovante</th>
+                        <th>Arquivos</th>
                         <th class="text-end">Ações</th>
                     </tr>
                 </thead>
@@ -412,25 +412,35 @@
                             </td>
 
                             <td>
-                                {% if abastecimento.comprovante %}
+                                <div class="d-flex flex-column align-items-start gap-1">
+                                    {% if abastecimento.comprovante %}
+                                        <a
+                                            href="{{ url_for('static', filename=abastecimento.comprovante) }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="btn btn-sm btn-outline-secondary"
+                                        >
+                                            <i class="bi bi-receipt"></i>
+                                            Cupom
+                                        </a>
+                                    {% endif %}
 
-                                    <a
-                                        href="{{ url_for('static', filename=abastecimento.comprovante) }}"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="btn btn-sm btn-outline-secondary"
-                                    >
-                                        <i class="bi bi-paperclip"></i>
-                                        Abrir
-                                    </a>
+                                    {% if abastecimento.foto_odometro %}
+                                        <a
+                                            href="{{ url_for('static', filename=abastecimento.foto_odometro) }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="btn btn-sm btn-outline-primary"
+                                        >
+                                            <i class="bi bi-speedometer2"></i>
+                                            Odômetro
+                                        </a>
+                                    {% endif %}
 
-                                {% else %}
-
-                                    <span class="text-muted">
-                                        Não enviado
-                                    </span>
-
-                                {% endif %}
+                                    {% if not abastecimento.comprovante and not abastecimento.foto_odometro %}
+                                        <span class="text-muted">Não enviado</span>
+                                    {% endif %}
+                                </div>
                             </td>
 
                             <td class="text-end">

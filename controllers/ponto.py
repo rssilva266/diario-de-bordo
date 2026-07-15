@@ -2,7 +2,9 @@ import math
 import os
 import uuid
 from datetime import datetime, timedelta
+from io import BytesIO
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 from flask import (
     Blueprint,
@@ -12,14 +14,35 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     url_for,
 )
 from flask_login import current_user, login_required
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import (
+    LongTable,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-from database.models import Colaborador, LocalTrabalho, PontoMarcacao, Usuario
+from database.models import (
+    Colaborador,
+    LocalTrabalho,
+    Motorista,
+    PontoMarcacao,
+    Usuario,
+)
 from extensions import db
 
 
@@ -314,6 +337,37 @@ def validar_usuario_colaborador(usuario_id, colaborador_id=None):
     return consulta.first()
 
 
+def obter_motorista_empresa(motorista_id):
+    if not motorista_id:
+        return None
+
+    try:
+        identificador = int(motorista_id)
+    except (TypeError, ValueError):
+        return None
+
+    return Motorista.query.filter_by(
+        id=identificador,
+        empresa_id=current_user.empresa_id,
+    ).first()
+
+
+def validar_motorista_colaborador(motorista_id, colaborador_id=None):
+    """Retorna outro colaborador que já usa o motorista selecionado."""
+    if not motorista_id:
+        return None
+
+    consulta = Colaborador.query.filter(
+        Colaborador.empresa_id == current_user.empresa_id,
+        Colaborador.motorista_id == int(motorista_id),
+    )
+
+    if colaborador_id is not None:
+        consulta = consulta.filter(Colaborador.id != int(colaborador_id))
+
+    return consulta.first()
+
+
 @ponto_bp.route("/cadastros/colaboradores", methods=["GET", "POST"])
 @login_required
 def colaboradores():
@@ -327,6 +381,7 @@ def colaboradores():
         funcao = request.form.get("funcao", "").strip() or None
         telefone = request.form.get("telefone", "").strip() or None
         usuario_id = request.form.get("usuario_id") or None
+        motorista_id = request.form.get("motorista_id") or None
         local_id = request.form.get("local_trabalho_id") or None
         jornada_horas = parse_float(request.form.get("jornada_horas")) or 8
 
@@ -351,6 +406,20 @@ def colaboradores():
             )
             return redirect(url_for("ponto.colaboradores"))
 
+        motorista = obter_motorista_empresa(motorista_id)
+        if motorista_id and motorista is None:
+            flash("O motorista selecionado não é válido para esta empresa.", "danger")
+            return redirect(url_for("ponto.colaboradores"))
+
+        motorista_vinculado = validar_motorista_colaborador(motorista_id)
+        if motorista_vinculado:
+            flash(
+                f"O motorista selecionado já está vinculado ao colaborador "
+                f"{motorista_vinculado.nome}.",
+                "danger",
+            )
+            return redirect(url_for("ponto.colaboradores"))
+
         try:
             colaborador = Colaborador(
                 empresa_id=current_user.empresa_id,
@@ -359,6 +428,7 @@ def colaboradores():
                 funcao=funcao,
                 telefone=telefone,
                 usuario_id=int(usuario_id) if usuario_id else None,
+                motorista_id=motorista.id if motorista else None,
                 local_trabalho_id=int(local_id) if local_id else None,
                 jornada_diaria_minutos=int(jornada_horas * 60),
                 ativo=True,
@@ -388,11 +458,16 @@ def colaboradores():
         ativo=True,
     ).order_by(LocalTrabalho.nome.asc()).all()
 
+    motoristas = Motorista.query.filter_by(
+        empresa_id=current_user.empresa_id,
+    ).order_by(Motorista.nome.asc()).all()
+
     return render_template(
         "cadastros/colaboradores.html",
         colaboradores=itens,
         usuarios=usuarios,
         locais=locais,
+        motoristas=motoristas,
     )
 
 
@@ -413,6 +488,7 @@ def editar_colaborador(colaborador_id):
     funcao = request.form.get("funcao", "").strip() or None
     telefone = request.form.get("telefone", "").strip() or None
     usuario_id = request.form.get("usuario_id") or None
+    motorista_id = request.form.get("motorista_id") or None
     local_id = request.form.get("local_trabalho_id") or None
     jornada_horas = parse_float(request.form.get("jornada_horas")) or 8
 
@@ -442,12 +518,30 @@ def editar_colaborador(colaborador_id):
         )
         return redirect(url_for("ponto.colaboradores"))
 
+    motorista = obter_motorista_empresa(motorista_id)
+    if motorista_id and motorista is None:
+        flash("O motorista selecionado não é válido para esta empresa.", "danger")
+        return redirect(url_for("ponto.colaboradores"))
+
+    motorista_vinculado = validar_motorista_colaborador(
+        motorista_id,
+        colaborador_id=colaborador.id,
+    )
+    if motorista_vinculado:
+        flash(
+            f"O motorista selecionado já está vinculado ao colaborador "
+            f"{motorista_vinculado.nome}.",
+            "danger",
+        )
+        return redirect(url_for("ponto.colaboradores"))
+
     try:
         colaborador.nome = nome
         colaborador.matricula = matricula
         colaborador.funcao = funcao
         colaborador.telefone = telefone
         colaborador.usuario_id = int(usuario_id) if usuario_id else None
+        colaborador.motorista_id = motorista.id if motorista else None
         colaborador.local_trabalho_id = int(local_id) if local_id else None
         colaborador.jornada_diaria_minutos = int(jornada_horas * 60)
         db.session.commit()
@@ -782,28 +876,525 @@ def coleta():
     )
 
 
+def obter_data_filtro_gestao():
+    data_texto = (
+        request.args.get("data")
+        or datetime.now().strftime("%Y-%m-%d")
+    )
+
+    try:
+        data_filtro = datetime.strptime(
+            data_texto,
+            "%Y-%m-%d",
+        )
+    except ValueError:
+        data_filtro = datetime.now()
+
+    return data_filtro.replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+
+
+def listar_colaboradores_gestao():
+    return (
+        Colaborador.query
+        .filter_by(
+            empresa_id=current_user.empresa_id,
+        )
+        .order_by(
+            Colaborador.ativo.desc(),
+            Colaborador.nome.asc(),
+        )
+        .all()
+    )
+
+
+def obter_colaborador_filtro_gestao():
+    colaborador_id = request.args.get(
+        "colaborador_id",
+        type=int,
+    )
+
+    if colaborador_id is None:
+        return None
+
+    return (
+        Colaborador.query
+        .filter_by(
+            id=colaborador_id,
+            empresa_id=current_user.empresa_id,
+        )
+        .first_or_404()
+    )
+
+
+def consulta_marcacoes_gestao(
+    inicio,
+    colaborador_filtro=None,
+):
+    fim = inicio + timedelta(days=1)
+
+    consulta = (
+        PontoMarcacao.query
+        .options(
+            joinedload(PontoMarcacao.colaborador),
+            joinedload(PontoMarcacao.local_trabalho),
+        )
+        .filter(
+            PontoMarcacao.empresa_id
+            == current_user.empresa_id,
+            PontoMarcacao.capturado_em
+            >= inicio,
+            PontoMarcacao.capturado_em
+            < fim,
+        )
+    )
+
+    if colaborador_filtro is not None:
+        consulta = consulta.filter(
+            PontoMarcacao.colaborador_id
+            == colaborador_filtro.id,
+        )
+
+    return consulta
+
+
+def descricao_localizacao_pdf(marcacao):
+    if marcacao.dentro_geocerca is True:
+        situacao = "Dentro da área"
+    elif marcacao.dentro_geocerca is False:
+        situacao = "Fora da área"
+    elif marcacao.local_trabalho is None:
+        situacao = "Local não configurado"
+    else:
+        situacao = "Não validado"
+
+    coordenadas = ""
+    if (
+        marcacao.latitude is not None
+        and marcacao.longitude is not None
+    ):
+        coordenadas = (
+            f"\n{marcacao.latitude:.6f}, "
+            f"{marcacao.longitude:.6f}"
+        )
+
+    return f"{situacao}{coordenadas}"
+
+
+def desenhar_rodape_relatorio_pdf(canvas, documento):
+    largura, _ = landscape(A4)
+
+    canvas.saveState()
+    canvas.setStrokeColor(colors.HexColor("#D9DEE5"))
+    canvas.line(
+        12 * mm,
+        12 * mm,
+        largura - 12 * mm,
+        12 * mm,
+    )
+    canvas.setFillColor(colors.HexColor("#6B7280"))
+    canvas.setFont("Helvetica", 8)
+    canvas.drawString(
+        12 * mm,
+        7.5 * mm,
+        "Relatório operacional — Gestão de Frota",
+    )
+    canvas.drawRightString(
+        largura - 12 * mm,
+        7.5 * mm,
+        f"Página {documento.page}",
+    )
+    canvas.restoreState()
+
+
+def gerar_relatorio_gestao_ponto_pdf(
+    marcacoes,
+    data_filtro,
+    colaborador_filtro,
+):
+    buffer = BytesIO()
+    documento = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=12 * mm,
+        leftMargin=12 * mm,
+        topMargin=12 * mm,
+        bottomMargin=18 * mm,
+        title="Relatório operacional de marcações",
+        author="Gestão de Frota",
+    )
+
+    estilos_base = getSampleStyleSheet()
+    estilo_titulo = ParagraphStyle(
+        "TituloRelatorioPonto",
+        parent=estilos_base["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        leading=22,
+        textColor=colors.white,
+        alignment=TA_LEFT,
+        spaceAfter=0,
+    )
+    estilo_subtitulo = ParagraphStyle(
+        "SubtituloRelatorioPonto",
+        parent=estilos_base["Normal"],
+        fontName="Helvetica",
+        fontSize=9,
+        leading=12,
+        textColor=colors.HexColor("#DBE4F0"),
+        alignment=TA_LEFT,
+    )
+    estilo_rotulo = ParagraphStyle(
+        "RotuloRelatorioPonto",
+        parent=estilos_base["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor("#6B7280"),
+    )
+    estilo_valor = ParagraphStyle(
+        "ValorRelatorioPonto",
+        parent=estilos_base["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=13,
+        textColor=colors.HexColor("#111827"),
+    )
+    estilo_cabecalho = ParagraphStyle(
+        "CabecalhoTabelaPonto",
+        parent=estilos_base["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=8,
+        leading=10,
+        textColor=colors.white,
+        alignment=TA_CENTER,
+    )
+    estilo_celula = ParagraphStyle(
+        "CelulaTabelaPonto",
+        parent=estilos_base["Normal"],
+        fontName="Helvetica",
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor("#111827"),
+    )
+    estilo_celula_centro = ParagraphStyle(
+        "CelulaTabelaPontoCentro",
+        parent=estilo_celula,
+        alignment=TA_CENTER,
+    )
+    estilo_secao = ParagraphStyle(
+        "SecaoRelatorioPonto",
+        parent=estilos_base["Heading2"],
+        fontName="Helvetica-Bold",
+        fontSize=12,
+        leading=15,
+        textColor=colors.HexColor("#111827"),
+        spaceBefore=4,
+        spaceAfter=8,
+    )
+
+    empresa = current_user.empresa
+    empresa_nome = (
+        empresa.nome_fantasia
+        or empresa.razao_social
+    )
+    empresa_documento = empresa.cnpj or "CNPJ não informado"
+    colaborador_nome = (
+        colaborador_filtro.nome
+        if colaborador_filtro is not None
+        else "Todos os colaboradores"
+    )
+    gerado_por = current_user.nome or current_user.usuario
+    colaboradores_com_marcacao = len({
+        marcacao.colaborador_id
+        for marcacao in marcacoes
+    })
+
+    def paragrafo(valor, estilo=estilo_celula):
+        texto = "—" if valor in (None, "") else str(valor)
+        texto = escape(texto).replace("\n", "<br/>")
+        return Paragraph(texto, estilo)
+
+    elementos = []
+
+    cabecalho = Table(
+        [[
+            Paragraph(
+                "Relatório operacional de marcações",
+                estilo_titulo,
+            ),
+            Paragraph(
+                "Gestão de Frota<br/>Uso interno da operação",
+                estilo_subtitulo,
+            ),
+        ]],
+        colWidths=[178 * mm, 68 * mm],
+    )
+    cabecalho.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0F172A")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+        ("TOPPADDING", (0, 0), (-1, -1), 12),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+    ]))
+    elementos.append(cabecalho)
+    elementos.append(Spacer(1, 7 * mm))
+
+    resumo = Table(
+        [[
+            [
+                Paragraph("EMPRESA", estilo_rotulo),
+                Paragraph(escape(empresa_nome), estilo_valor),
+                Paragraph(escape(empresa_documento), estilo_rotulo),
+            ],
+            [
+                Paragraph("DATA", estilo_rotulo),
+                Paragraph(
+                    data_filtro.strftime("%d/%m/%Y"),
+                    estilo_valor,
+                ),
+            ],
+            [
+                Paragraph("COLABORADOR", estilo_rotulo),
+                Paragraph(escape(colaborador_nome), estilo_valor),
+            ],
+            [
+                Paragraph("RESUMO", estilo_rotulo),
+                Paragraph(
+                    f"{len(marcacoes)} marcação(ões) · "
+                    f"{colaboradores_com_marcacao} colaborador(es)",
+                    estilo_valor,
+                ),
+            ],
+        ]],
+        colWidths=[77 * mm, 40 * mm, 77 * mm, 52 * mm],
+    )
+    resumo.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F3F5F7")),
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#D9DEE5")),
+        ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#D9DEE5")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+    ]))
+    elementos.append(resumo)
+    elementos.append(Spacer(1, 7 * mm))
+    elementos.append(
+        Paragraph("Marcações encontradas", estilo_secao)
+    )
+
+    dados_tabela = [[
+        Paragraph("Horário", estilo_cabecalho),
+        Paragraph("Colaborador", estilo_cabecalho),
+        Paragraph("Matrícula", estilo_cabecalho),
+        Paragraph("Tipo", estilo_cabecalho),
+        Paragraph("Localização", estilo_cabecalho),
+        Paragraph("Precisão", estilo_cabecalho),
+        Paragraph("Sincronização", estilo_cabecalho),
+    ]]
+
+    for marcacao in marcacoes:
+        precisao = (
+            f"{marcacao.precisao_metros:.0f} m"
+            if marcacao.precisao_metros is not None
+            else "—"
+        )
+        dados_tabela.append([
+            paragrafo(
+                marcacao.capturado_em.strftime("%H:%M:%S"),
+                estilo_celula_centro,
+            ),
+            paragrafo(marcacao.colaborador.nome),
+            paragrafo(marcacao.colaborador.matricula),
+            paragrafo(TIPOS_PONTO.get(
+                marcacao.tipo,
+                marcacao.tipo,
+            )),
+            paragrafo(descricao_localizacao_pdf(marcacao)),
+            paragrafo(precisao, estilo_celula_centro),
+            paragrafo(
+                marcacao.status_sincronizacao,
+                estilo_celula_centro,
+            ),
+        ])
+
+    if len(dados_tabela) == 1:
+        dados_tabela.append([
+            paragrafo("Nenhuma marcação encontrada para os filtros."),
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ])
+
+    tabela = LongTable(
+        dados_tabela,
+        colWidths=[22 * mm, 49 * mm, 27 * mm, 35 * mm, 57 * mm, 24 * mm, 32 * mm],
+        repeatRows=1,
+    )
+    estilo_tabela = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2563EB")),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#D9DEE5")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]
+    for indice in range(1, len(dados_tabela)):
+        if indice % 2 == 0:
+            estilo_tabela.append((
+                "BACKGROUND",
+                (0, indice),
+                (-1, indice),
+                colors.HexColor("#F8FAFC"),
+            ))
+    if len(dados_tabela) == 2 and not marcacoes:
+        estilo_tabela.append(("SPAN", (0, 1), (-1, 1)))
+        estilo_tabela.append(("ALIGN", (0, 1), (-1, 1), "CENTER"))
+    tabela.setStyle(TableStyle(estilo_tabela))
+    elementos.append(tabela)
+
+    observacoes = [
+        marcacao
+        for marcacao in marcacoes
+        if marcacao.observacao
+    ]
+    if observacoes:
+        elementos.append(Spacer(1, 7 * mm))
+        elementos.append(
+            Paragraph("Observações e correções", estilo_secao)
+        )
+        dados_observacoes = [[
+            Paragraph("Horário", estilo_cabecalho),
+            Paragraph("Colaborador", estilo_cabecalho),
+            Paragraph("Observação", estilo_cabecalho),
+        ]]
+        for marcacao in observacoes:
+            dados_observacoes.append([
+                paragrafo(
+                    marcacao.capturado_em.strftime("%H:%M:%S"),
+                    estilo_celula_centro,
+                ),
+                paragrafo(marcacao.colaborador.nome),
+                paragrafo(marcacao.observacao),
+            ])
+
+        tabela_observacoes = LongTable(
+            dados_observacoes,
+            colWidths=[27 * mm, 55 * mm, 164 * mm],
+            repeatRows=1,
+        )
+        tabela_observacoes.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0F172A")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#D9DEE5")),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        elementos.append(tabela_observacoes)
+
+    elementos.append(Spacer(1, 6 * mm))
+    elementos.append(paragrafo(
+        "Gerado em "
+        f"{datetime.now().strftime('%d/%m/%Y às %H:%M:%S')} "
+        f"por {gerado_por}.",
+    ))
+
+    documento.build(
+        elementos,
+        onFirstPage=desenhar_rodape_relatorio_pdf,
+        onLaterPages=desenhar_rodape_relatorio_pdf,
+    )
+    buffer.seek(0)
+    return buffer
+
+
 @ponto_bp.route("/ponto-eletronico/gestao")
 @login_required
 def gestao():
-    data_texto = request.args.get("data") or datetime.now().strftime("%Y-%m-%d")
-    try:
-        data_filtro = datetime.strptime(data_texto, "%Y-%m-%d")
-    except ValueError:
-        data_filtro = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    data_filtro = obter_data_filtro_gestao()
+    colaborador_filtro = obter_colaborador_filtro_gestao()
+    colaboradores = listar_colaboradores_gestao()
 
-    inicio = data_filtro.replace(hour=0, minute=0, second=0, microsecond=0)
-    fim = inicio + timedelta(days=1)
-    marcacoes = PontoMarcacao.query.filter(
-        PontoMarcacao.empresa_id == current_user.empresa_id,
-        PontoMarcacao.capturado_em >= inicio,
-        PontoMarcacao.capturado_em < fim,
-    ).order_by(PontoMarcacao.capturado_em.desc()).all()
+    marcacoes = (
+        consulta_marcacoes_gestao(
+            data_filtro,
+            colaborador_filtro,
+        )
+        .order_by(
+            PontoMarcacao.capturado_em.desc(),
+        )
+        .all()
+    )
 
     return render_template(
         "ponto/gestao.html",
         marcacoes=marcacoes,
-        data_filtro=inicio.date(),
+        data_filtro=data_filtro.date(),
+        colaboradores=colaboradores,
+        colaborador_filtro=colaborador_filtro,
+        quantidade_colaboradores=len({
+            marcacao.colaborador_id
+            for marcacao in marcacoes
+        }),
         tipos=TIPOS_PONTO,
+    )
+
+
+@ponto_bp.route(
+    "/ponto-eletronico/gestao/relatorio.pdf"
+)
+@login_required
+def exportar_gestao_ponto_pdf():
+    data_filtro = obter_data_filtro_gestao()
+    colaborador_filtro = obter_colaborador_filtro_gestao()
+
+    marcacoes = (
+        consulta_marcacoes_gestao(
+            data_filtro,
+            colaborador_filtro,
+        )
+        .order_by(
+            PontoMarcacao.capturado_em.asc(),
+        )
+        .all()
+    )
+
+    arquivo = gerar_relatorio_gestao_ponto_pdf(
+        marcacoes,
+        data_filtro,
+        colaborador_filtro,
+    )
+    sufixo_colaborador = (
+        f"-colaborador-{colaborador_filtro.id}"
+        if colaborador_filtro is not None
+        else "-todos"
+    )
+    nome_arquivo = (
+        "relatorio-marcacoes-"
+        f"{data_filtro.strftime('%Y-%m-%d')}"
+        f"{sufixo_colaborador}.pdf"
+    )
+
+    return send_file(
+        arquivo,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=nome_arquivo,
+        max_age=0,
     )
 
 
@@ -824,6 +1415,35 @@ def editar_marcacao_ponto(marcacao_id):
         return redirect(
             url_for("ponto.gestao")
         )
+
+    filtro_data = (
+        request.form
+        .get("filtro_data", "")
+        .strip()
+    )
+    try:
+        datetime.strptime(
+            filtro_data,
+            "%Y-%m-%d",
+        )
+    except ValueError:
+        filtro_data = ""
+
+    filtro_colaborador_id = request.form.get(
+        "filtro_colaborador_id",
+        type=int,
+    )
+    if filtro_colaborador_id is not None:
+        colaborador_filtro_valido = (
+            Colaborador.query
+            .filter_by(
+                id=filtro_colaborador_id,
+                empresa_id=current_user.empresa_id,
+            )
+            .first()
+        )
+        if colaborador_filtro_valido is None:
+            filtro_colaborador_id = None
 
     marcacao = (
         PontoMarcacao.query
@@ -989,12 +1609,21 @@ def editar_marcacao_ponto(marcacao_id):
         "success",
     )
 
+    parametros_retorno = {
+        "data": (
+            filtro_data
+            or nova_data_hora.strftime("%Y-%m-%d")
+        ),
+    }
+    if filtro_colaborador_id is not None:
+        parametros_retorno["colaborador_id"] = (
+            filtro_colaborador_id
+        )
+
     return redirect(
         url_for(
             "ponto.gestao",
-            data=nova_data_hora.strftime(
-                "%Y-%m-%d"
-            ),
+            **parametros_retorno,
         )
     )
 

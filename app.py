@@ -20,6 +20,7 @@ from controllers.manutencoes import manutencoes_bp
 from controllers.motoristas import motoristas_bp
 from controllers.obras import obras_bp
 from controllers.ponto import ponto_bp
+from controllers.mobile_api import mobile_api_bp
 from controllers.relatorios import relatorios_bp
 from controllers.sistema import sistema_bp
 from controllers.usuarios import usuarios_bp
@@ -166,6 +167,7 @@ def create_app():
     app.register_blueprint(motoristas_bp)
     app.register_blueprint(obras_bp)
     app.register_blueprint(ponto_bp)
+    app.register_blueprint(mobile_api_bp)
     app.register_blueprint(diario_bp)
     app.register_blueprint(abastecimentos_bp)
     app.register_blueprint(manutencoes_bp)

@@ -755,6 +755,12 @@ class DiarioBordo(db.Model):
         back_populates="diarios_bordo",
     )
 
+    abastecimentos = db.relationship(
+        "Abastecimento",
+        back_populates="diario_bordo",
+        lazy=True,
+    )
+
     @property
     def km_percorrida(self):
         if self.km_final is None:
@@ -827,6 +833,11 @@ class Abastecimento(db.Model):
         nullable=True,
     )
 
+    foto_odometro = db.Column(
+        db.String(500),
+        nullable=True,
+    )
+
     observacoes = db.Column(
         db.Text,
         nullable=True,
@@ -875,6 +886,13 @@ class Abastecimento(db.Model):
         nullable=False,
     )
 
+    diario_bordo_id = db.Column(
+        db.Integer,
+        db.ForeignKey("diarios_bordo.id"),
+        nullable=True,
+        index=True,
+    )
+
     empresa = db.relationship(
         "Empresa",
         back_populates="abastecimentos",
@@ -897,6 +915,11 @@ class Abastecimento(db.Model):
 
     usuario = db.relationship(
         "Usuario",
+        back_populates="abastecimentos",
+    )
+
+    diario_bordo = db.relationship(
+        "DiarioBordo",
         back_populates="abastecimentos",
     )
 
@@ -1054,6 +1077,10 @@ class Colaborador(db.Model):
             "matricula",
             name="uq_colaborador_empresa_matricula",
         ),
+        db.UniqueConstraint(
+            "motorista_id",
+            name="uq_colaboradores_motorista_id",
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -1082,10 +1109,16 @@ class Colaborador(db.Model):
         db.ForeignKey("locais_trabalho.id"),
         nullable=True,
     )
+    motorista_id = db.Column(
+        db.Integer,
+        db.ForeignKey("motoristas.id"),
+        nullable=True,
+    )
 
     empresa = db.relationship("Empresa", foreign_keys=[empresa_id])
     usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
     local_trabalho = db.relationship("LocalTrabalho", back_populates="colaboradores")
+    motorista = db.relationship("Motorista", foreign_keys=[motorista_id])
     marcacoes = db.relationship(
         "PontoMarcacao",
         back_populates="colaborador",

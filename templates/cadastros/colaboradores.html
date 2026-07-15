@@ -28,6 +28,7 @@
                     <th>Matrícula</th>
                     <th>Função</th>
                     <th>Usuário</th>
+                    <th>Motorista</th>
                     <th>Local</th>
                     <th>Jornada</th>
                     <th>Status</th>
@@ -48,6 +49,19 @@
 
                     <td>
                         {{ c.usuario.usuario if c.usuario else 'Não vinculado' }}
+                    </td>
+
+                    <td>
+                        {% if c.motorista %}
+                            {{ c.motorista.nome }}
+                            {% if c.motorista.veiculo %}
+                                <small class="d-block text-muted">
+                                    {{ c.motorista.veiculo.placa }}
+                                </small>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">Não vinculado</span>
+                        {% endif %}
                     </td>
 
                     <td>
@@ -97,7 +111,7 @@
                 {% else %}
                 <tr>
                     <td
-                        colspan="8"
+                        colspan="9"
                         class="text-center text-muted py-4"
                     >
                         Nenhum colaborador cadastrado.
@@ -197,6 +211,34 @@
                                                 </option>
                                                 {% endfor %}
                                             </select>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">
+                                                Motorista vinculado
+                                            </label>
+
+                                            <select
+                                                class="form-select"
+                                                name="motorista_id"
+                                            >
+                                                <option value="">
+                                                    Não vincular
+                                                </option>
+
+                                                {% for m in motoristas %}
+                                                <option
+                                                    value="{{ m.id }}"
+                                                    {% if c.motorista_id == m.id %}selected{% endif %}
+                                                >
+                                                    {{ m.nome }}{% if m.veiculo %} — {{ m.veiculo.placa }}{% endif %}{% if m.status != 'Ativo' %} ({{ m.status }}){% endif %}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+
+                                            <div class="form-text">
+                                                Usado pelo Diário de Bordo no aplicativo.
+                                            </div>
                                         </div>
 
                                         <div class="col-md-6">
@@ -338,6 +380,31 @@
                                 </option>
                                 {% endfor %}
                             </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                Motorista vinculado
+                            </label>
+
+                            <select
+                                class="form-select"
+                                name="motorista_id"
+                            >
+                                <option value="">
+                                    Não vincular
+                                </option>
+
+                                {% for m in motoristas %}
+                                <option value="{{ m.id }}">
+                                    {{ m.nome }}{% if m.veiculo %} — {{ m.veiculo.placa }}{% endif %}{% if m.status != 'Ativo' %} ({{ m.status }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+
+                            <div class="form-text">
+                                Usado pelo Diário de Bordo no aplicativo.
+                            </div>
                         </div>
 
                         <div class="col-md-6">
