@@ -9,6 +9,7 @@ class DiaryStartData {
     required this.origem,
     required this.destino,
     required this.houveAbastecimento,
+    required this.transportaMaterial,
     this.obraId,
     this.finalidade = '',
     this.ocorrencias = '',
@@ -19,6 +20,11 @@ class DiaryStartData {
     this.tanqueCheio = false,
     this.fotoOdometroPath,
     this.cupomFiscalPath,
+    this.material = '',
+    this.numeroMovimentacao = '',
+    this.quantidadeMaterial = '',
+    this.unidadeMaterial = '',
+    this.observacaoMaterial = '',
   });
 
   final String data;
@@ -37,6 +43,12 @@ class DiaryStartData {
   final bool tanqueCheio;
   final String? fotoOdometroPath;
   final String? cupomFiscalPath;
+  final bool transportaMaterial;
+  final String material;
+  final String numeroMovimentacao;
+  final String quantidadeMaterial;
+  final String unidadeMaterial;
+  final String observacaoMaterial;
 }
 
 class DiaryService {
@@ -67,6 +79,12 @@ class DiaryService {
         'valor_litro_abastecimento': dados.valorLitro,
         'numero_nota_abastecimento': dados.numeroNota,
         'tanque_cheio_abastecimento': dados.tanqueCheio ? 'sim' : 'nao',
+        'transporta_material': dados.transportaMaterial ? 'sim' : 'nao',
+        'material': dados.material,
+        'numero_movimentacao': dados.numeroMovimentacao,
+        'quantidade_material': dados.quantidadeMaterial,
+        'unidade_material': dados.unidadeMaterial,
+        'observacao_material': dados.observacaoMaterial,
       },
       files: {
         if (dados.fotoOdometroPath != null)
@@ -86,10 +104,7 @@ class DiaryService {
   }) async {
     final json = await _apiClient.post(
       '/diario/$diarioId/finalizar',
-      body: {
-        'hora_chegada': horaChegada,
-        'km_final': kmFinal,
-      },
+      body: {'hora_chegada': horaChegada, 'km_final': kmFinal},
     );
 
     return DiaryState.fromJson(json['estado'] as Map<String, dynamic>);

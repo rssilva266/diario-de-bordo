@@ -1,7 +1,7 @@
 name: diario_de_bordo_app
-description: Aplicativo móvel de ponto eletrônico e diário de bordo.
+description: Motriva Fleet - gestao movel de frotas, viagens e operacao.
 publish_to: "none"
-version: 0.4.0+4
+version: 1.1.0+3
 
 environment:
   sdk: ^3.12.0
@@ -14,11 +14,32 @@ dependencies:
   http: ^1.5.0
   image_picker: ^1.2.3
   path_provider: ^2.1.6
+  package_info_plus: ^10.2.0
+  uuid: 4.5.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.8
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/branding/motriva_fleet_icon.png
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/branding/motriva_fleet_icon.png
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#0F172A"
+  image: assets/branding/motriva_fleet_icon.png
+  fullscreen: true
+  android_12:
+    color: "#0F172A"
+    image: assets/branding/motriva_fleet_icon.png
+    icon_background_color: "#0F172A"

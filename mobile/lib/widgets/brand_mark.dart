@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/app_colors.dart';
-
 class BrandMark extends StatelessWidget {
   const BrandMark({
     required this.size,
@@ -14,17 +12,14 @@ class BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(compact ? 5 : 8),
-      ),
-      child: Icon(
-        Icons.local_shipping_outlined,
-        size: size * 0.52,
-        color: Colors.white,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(compact ? 5 : 9),
+      child: Image.asset(
+        'assets/branding/motriva_fleet_icon.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
       ),
     );
   }

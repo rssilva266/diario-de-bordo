@@ -26,6 +26,7 @@ PERFIS_PERMITIDOS = {
     "Frota",
     "RH",
     "Motorista",
+    "Apontador",
     "Operador",
 }
 

@@ -1,0 +1,331 @@
+{% extends "layout/base.html" %}
+
+{% block titulo %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+        <h1 class="page-title mb-1">Movimentações de Materiais</h1>
+        <p class="text-muted mb-0">
+            Acompanhe cargas em trânsito e recebimentos confirmados pelos apontadores.
+        </p>
+    </div>
+
+    <a href="{{ url_for('diario.listar_diarios') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>
+        Iniciar pelo Diário de Bordo
+    </a>
+</div>
+{% endblock %}
+
+{% block conteudo %}
+<div class="row g-3 mb-3">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="dashboard-card">
+            <div class="dashboard-card-title">
+                <i class="bi bi-box-seam icon-blue"></i>
+                Total
+            </div>
+            <div class="dashboard-card-value mt-3">{{ total_movimentacoes }}</div>
+            <p class="dashboard-card-subtitle">Movimentações registradas</p>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="dashboard-card">
+            <div class="dashboard-card-title">
+                <i class="bi bi-truck text-warning"></i>
+                Em trânsito
+            </div>
+            <div class="dashboard-card-value mt-3">{{ total_em_transito }}</div>
+            <p class="dashboard-card-subtitle">Aguardando recebimento</p>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="dashboard-card">
+            <div class="dashboard-card-title">
+                <i class="bi bi-check-circle text-success"></i>
+                Recebidas hoje
+            </div>
+            <div class="dashboard-card-value mt-3">{{ total_recebidas_hoje }}</div>
+            <p class="dashboard-card-subtitle">Confirmações do dia</p>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="dashboard-card">
+            <div class="dashboard-card-title">
+                <i class="bi bi-exclamation-triangle text-danger"></i>
+                Com ressalva
+            </div>
+            <div class="dashboard-card-value mt-3">{{ total_ressalvas }}</div>
+            <p class="dashboard-card-subtitle">Recebimentos com divergência</p>
+        </div>
+    </div>
+</div>
+
+<div class="section-card mb-3">
+    <form method="GET" action="{{ url_for('diario.listar_movimentacoes_materiais') }}">
+        <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-2">
+                <label for="filtroStatusMaterial" class="form-label">Status</label>
+                <select id="filtroStatusMaterial" name="status" class="form-select">
+                    <option value="">Todos</option>
+                    {% for status in ["Em trânsito", "Recebido", "Recebido com ressalva", "Cancelado"] %}
+                        <option value="{{ status }}" {% if status_filtro == status %}selected{% endif %}>
+                            {{ status }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-2">
+                <label for="filtroPlacaMaterial" class="form-label">Placa</label>
+                <input
+                    type="text"
+                    id="filtroPlacaMaterial"
+                    name="placa"
+                    class="form-control text-uppercase"
+                    value="{{ placa_filtro }}"
+                    placeholder="ABC1D23"
+                >
+            </div>
+
+            <div class="col-12 col-md-2">
+                <label for="filtroNumeroMaterial" class="form-label">Movimentação</label>
+                <input
+                    type="text"
+                    id="filtroNumeroMaterial"
+                    name="numero_movimentacao"
+                    class="form-control"
+                    value="{{ numero_filtro }}"
+                    placeholder="Número"
+                >
+            </div>
+
+            <div class="col-12 col-md-2">
+                <label for="filtroMaterial" class="form-label">Material</label>
+                <input
+                    type="text"
+                    id="filtroMaterial"
+                    name="material"
+                    class="form-control"
+                    value="{{ material_filtro }}"
+                    placeholder="Ex.: brita"
+                >
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label for="filtroDataInicioMaterial" class="form-label">Data inicial</label>
+                <input
+                    type="date"
+                    id="filtroDataInicioMaterial"
+                    name="data_inicio"
+                    class="form-control"
+                    value="{{ data_inicio_filtro }}"
+                >
+            </div>
+
+            <div class="col-6 col-md-2">
+                <label for="filtroDataFimMaterial" class="form-label">Data final</label>
+                <input
+                    type="date"
+                    id="filtroDataFimMaterial"
+                    name="data_fim"
+                    class="form-control"
+                    value="{{ data_fim_filtro }}"
+                >
+            </div>
+
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel me-1"></i>
+                    Filtrar
+                </button>
+                <a href="{{ url_for('diario.listar_movimentacoes_materiais') }}" class="btn btn-outline-secondary">
+                    Limpar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="section-card">
+    {% if movimentacoes %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Saída</th>
+                        <th>Placa</th>
+                        <th>Material</th>
+                        <th>Movimentação</th>
+                        <th>Trajeto</th>
+                        <th>Motorista</th>
+                        <th>Status</th>
+                        <th>Recebimento</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in movimentacoes %}
+                        {% set diario = item.diario_bordo %}
+                        <tr>
+                            <td>
+                                <strong>{{ diario.data.strftime("%d/%m/%Y") }}</strong>
+                                <div class="small text-muted">{{ diario.hora_saida.strftime("%H:%M") }}</div>
+                            </td>
+                            <td>
+                                <strong>{{ diario.veiculo.placa }}</strong>
+                                <div class="small text-muted">{{ diario.veiculo.modelo }}</div>
+                            </td>
+                            <td>
+                                <strong>{{ item.material }}</strong>
+                                {% if item.quantidade is not none %}
+                                    <div class="small text-muted">
+                                        {{ item.quantidade }} {{ item.unidade or "" }}
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.numero_movimentacao }}</td>
+                            <td>
+                                {{ diario.origem }}
+                                <i class="bi bi-arrow-right mx-1 text-muted"></i>
+                                {{ diario.destino }}
+                                {% if diario.obra %}
+                                    <div class="small text-muted">{{ diario.obra.codigo }} — {{ diario.obra.nome }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ diario.motorista.nome }}</td>
+                            <td>
+                                {% if item.status == "Em trânsito" %}
+                                    <span class="badge text-bg-warning">Em trânsito</span>
+                                {% elif item.status == "Recebido" %}
+                                    <span class="badge text-bg-success">Recebido</span>
+                                {% elif item.status == "Recebido com ressalva" %}
+                                    <span class="badge text-bg-danger">Com ressalva</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">Cancelado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.recebido_em %}
+                                    <strong>{{ item.recebido_em.strftime("%d/%m/%Y %H:%M") }}</strong>
+                                    <div class="small text-muted">
+                                        {{ item.recebido_por.nome if item.recebido_por else "Usuário não identificado" }}
+                                    </div>
+                                {% elif item.status == "Cancelado" %}
+                                    <span class="text-muted">Não recebido</span>
+                                {% else %}
+                                    <span class="text-muted">Aguardando</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#detalheMovimentacao{{ item.id }}"
+                                >
+                                    <i class="bi bi-eye me-1"></i>
+                                    Detalhes
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-box-seam fs-1 text-secondary"></i>
+            <h3 class="fs-5 mt-3">Nenhuma movimentação encontrada</h3>
+            <p class="text-muted mb-0">Ajuste os filtros ou inicie um diário transportando material.</p>
+        </div>
+    {% endif %}
+</div>
+
+{% for item in movimentacoes %}
+    {% set diario = item.diario_bordo %}
+    <div class="modal fade" id="detalheMovimentacao{{ item.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">Movimentação {{ item.numero_movimentacao }}</h5>
+                        <small class="text-muted">{{ diario.veiculo.placa }} · {{ item.material }}</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6"><strong>Motorista</strong><div>{{ diario.motorista.nome }}</div></div>
+                        <div class="col-md-6"><strong>Veículo</strong><div>{{ diario.veiculo.placa }} — {{ diario.veiculo.modelo }}</div></div>
+                        <div class="col-md-6"><strong>Material</strong><div>{{ item.material }}</div></div>
+                        <div class="col-md-6"><strong>Quantidade</strong><div>{{ item.quantidade if item.quantidade is not none else "Não informada" }} {{ item.unidade or "" }}</div></div>
+                        <div class="col-md-6"><strong>Origem</strong><div>{{ diario.origem }}</div></div>
+                        <div class="col-md-6"><strong>Destino</strong><div>{{ diario.destino }}</div></div>
+                        <div class="col-12"><strong>Observação da carga</strong><div>{{ item.observacao_carga or "Sem observações" }}</div></div>
+                    </div>
+
+                    {% if item.recebido_em %}
+                        <hr>
+                        <h6>Comprovante de recebimento</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6"><strong>Recebido por</strong><div>{{ item.recebido_por.nome if item.recebido_por else "—" }}</div></div>
+                            <div class="col-md-6"><strong>Data e hora</strong><div>{{ item.recebido_em.strftime("%d/%m/%Y %H:%M") }}</div></div>
+                            <div class="col-12"><strong>Observação</strong><div>{{ item.observacao_recebimento or "Sem ressalvas" }}</div></div>
+                            {% if item.foto_recebimento %}
+                                <div class="col-12">
+                                    <a
+                                        href="{{ url_for('static', filename=item.foto_recebimento) }}"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="btn btn-outline-primary"
+                                    >
+                                        <i class="bi bi-image me-1"></i>
+                                        Abrir foto do recebimento
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if item.status == "Cancelado" %}
+                        <hr>
+                        <div class="alert alert-secondary mb-0">
+                            <strong>Cancelada por:</strong>
+                            {{ item.cancelado_por.nome if item.cancelado_por else "Usuário não identificado" }}
+                            {% if item.cancelado_em %}em {{ item.cancelado_em.strftime("%d/%m/%Y %H:%M") }}{% endif %}
+                            <br>
+                            <strong>Motivo:</strong> {{ item.motivo_cancelamento or "Não informado" }}
+                        </div>
+                    {% endif %}
+
+                    {% if item.status == "Em trânsito" and (current_user.perfil or "")|lower in ["administrador", "gestor", "frota"] %}
+                        <hr>
+                        <form
+                            method="POST"
+                            action="{{ url_for('diario.cancelar_movimentacao_material', movimentacao_id=item.id) }}"
+                            onsubmit="return confirm('Cancelar esta movimentação?');"
+                        >
+                            <label for="motivoCancelamento{{ item.id }}" class="form-label">Motivo do cancelamento</label>
+                            <div class="d-flex gap-2">
+                                <input
+                                    type="text"
+                                    id="motivoCancelamento{{ item.id }}"
+                                    name="motivo"
+                                    class="form-control"
+                                    maxlength="500"
+                                    required
+                                >
+                                <button type="submit" class="btn btn-outline-danger">Cancelar movimentação</button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+{% endblock %}

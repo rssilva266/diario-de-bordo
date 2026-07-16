@@ -10,7 +10,7 @@ static/uploads/
 backups/*.zip
 backups/restore_*/
 
-# Pacotes e instaladores temporários
+# Pacotes e instaladores temporï¿½rios
 backups/
 *.zip
 *.tar.gz
@@ -26,4 +26,10 @@ mobile/build/
 mobile/coverage/
 mobile/android/.gradle/
 mobile/android/local.properties
+mobile/android/key.properties
+
+# Assinatura Android local
+*.jks
+*.keystore
+
 mobile/android/key.properties

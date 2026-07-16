@@ -8,12 +8,12 @@ import '../services/auth_storage.dart';
 
 enum SessionStatus { carregando, autenticado, desautenticado }
 
+enum LoginErrorType { credenciais, rede, servidor, desconhecido }
+
 class SessionController extends ChangeNotifier {
-  SessionController({
-    required ApiClient apiClient,
-    required this._authStorage,
-  })  : _apiClient = apiClient,
-        _authService = AuthService(apiClient);
+  SessionController({required ApiClient apiClient, required this._authStorage})
+    : _apiClient = apiClient,
+      _authService = AuthService(apiClient);
 
   final ApiClient _apiClient;
   final AuthStorage _authStorage;
@@ -23,11 +23,23 @@ class SessionController extends ChangeNotifier {
   UserModel? usuario;
   bool enviandoLogin = false;
   String? erroLogin;
+  LoginErrorType? tipoErroLogin;
 
   ApiClient get apiClient => _apiClient;
 
   Future<String> obterDispositivoId() {
     return _authStorage.obterDispositivoId();
+  }
+
+  Future<String?> obterUltimoUsuario() {
+    return _authStorage.lerUltimoUsuario();
+  }
+
+  void limparErroLogin() {
+    if (erroLogin == null && tipoErroLogin == null) return;
+    erroLogin = null;
+    tipoErroLogin = null;
+    notifyListeners();
   }
 
   Future<void> restaurarSessao() async {
@@ -50,25 +62,44 @@ class SessionController extends ChangeNotifier {
   }
 
   Future<bool> login({required String usuario, required String senha}) async {
+    final usuarioLimpo = usuario.trim();
+
     enviandoLogin = true;
     erroLogin = null;
+    tipoErroLogin = null;
     notifyListeners();
 
     try {
       final resultado = await _authService.login(
-        usuario: usuario.trim(),
+        usuario: usuarioLimpo,
         senha: senha,
       );
       _apiClient.token = resultado.token;
       await _authStorage.salvarToken(resultado.token);
+      await _authStorage.salvarUltimoUsuario(usuarioLimpo);
       this.usuario = resultado.usuario;
       status = SessionStatus.autenticado;
       return true;
     } on ApiException catch (erro) {
-      erroLogin = erro.message;
+      if (erro.networkFailure) {
+        tipoErroLogin = LoginErrorType.rede;
+        erroLogin =
+            'N\u00E3o foi poss\u00EDvel conectar ao servidor. Verifique sua internet.';
+      } else if (erro.statusCode == 401) {
+        tipoErroLogin = LoginErrorType.credenciais;
+        erroLogin = 'Usu\u00E1rio ou senha inv\u00E1lidos.';
+      } else if ((erro.statusCode ?? 0) >= 500) {
+        tipoErroLogin = LoginErrorType.servidor;
+        erroLogin =
+            'O servi\u00E7o est\u00E1 temporariamente indispon\u00EDvel. Tente novamente.';
+      } else {
+        tipoErroLogin = LoginErrorType.desconhecido;
+        erroLogin = erro.message;
+      }
       return false;
     } catch (_) {
-      erroLogin = 'Não foi possível entrar. Tente novamente.';
+      tipoErroLogin = LoginErrorType.desconhecido;
+      erroLogin = 'N\u00E3o foi poss\u00EDvel entrar. Tente novamente.';
       return false;
     } finally {
       enviandoLogin = false;
@@ -85,7 +116,8 @@ class SessionController extends ChangeNotifier {
 
   Future<void> sessaoExpirada() async {
     await _limparSessao();
-    erroLogin = 'Sua sessão expirou. Entre novamente.';
+    tipoErroLogin = LoginErrorType.desconhecido;
+    erroLogin = 'Sua sess\u00E3o expirou. Entre novamente.';
     notifyListeners();
   }
 

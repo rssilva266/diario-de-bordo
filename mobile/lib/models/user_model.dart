@@ -7,6 +7,8 @@ class UserModel {
     required this.empresa,
     this.email,
     this.colaboradorVinculado = false,
+    this.trocarSenha = false,
+    this.podeReceberMateriais = false,
   });
 
   final int id;
@@ -16,6 +18,8 @@ class UserModel {
   final String empresa;
   final String? email;
   final bool colaboradorVinculado;
+  final bool trocarSenha;
+  final bool podeReceberMateriais;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -23,9 +27,12 @@ class UserModel {
       nome: json['nome'] as String,
       usuario: json['usuario'] as String,
       perfil: json['perfil'] as String,
-      empresa: (json['empresa'] as Map<String, dynamic>?)?['nome'] as String? ?? '',
+      empresa:
+          (json['empresa'] as Map<String, dynamic>?)?['nome'] as String? ?? '',
       email: json['email'] as String?,
       colaboradorVinculado: json['colaborador_vinculado'] as bool? ?? false,
+      trocarSenha: json['trocar_senha'] as bool? ?? false,
+      podeReceberMateriais: json['pode_receber_materiais'] as bool? ?? false,
     );
   }
 

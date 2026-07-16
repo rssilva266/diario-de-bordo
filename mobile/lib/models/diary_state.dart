@@ -63,6 +63,35 @@ class DiaryWorkSite {
   }
 }
 
+class DiaryMaterial {
+  const DiaryMaterial({
+    required this.id,
+    required this.material,
+    required this.numeroMovimentacao,
+    required this.status,
+    this.quantidade,
+    this.unidade,
+  });
+
+  final int id;
+  final String material;
+  final String numeroMovimentacao;
+  final String status;
+  final double? quantidade;
+  final String? unidade;
+
+  factory DiaryMaterial.fromJson(Map<String, dynamic> json) {
+    return DiaryMaterial(
+      id: (json['id'] as num).toInt(),
+      material: json['material'] as String? ?? '',
+      numeroMovimentacao: json['numero_movimentacao'] as String? ?? '',
+      status: json['status'] as String? ?? '',
+      quantidade: (json['quantidade'] as num?)?.toDouble(),
+      unidade: json['unidade'] as String?,
+    );
+  }
+}
+
 class DiaryEntry {
   const DiaryEntry({
     required this.id,
@@ -81,6 +110,7 @@ class DiaryEntry {
     this.finalidade,
     this.ocorrencias,
     this.obra,
+    this.movimentacaoMaterial,
   });
 
   final int id;
@@ -99,11 +129,13 @@ class DiaryEntry {
   final DiaryDriver motorista;
   final DiaryWorkSite? obra;
   final bool houveAbastecimento;
+  final DiaryMaterial? movimentacaoMaterial;
 
   bool get emAndamento => status == 'Em andamento';
 
   factory DiaryEntry.fromJson(Map<String, dynamic> json) {
     final obraJson = json['obra'];
+    final movimentacaoJson = json['movimentacao_material'];
 
     return DiaryEntry(
       id: (json['id'] as num).toInt(),
@@ -118,9 +150,7 @@ class DiaryEntry {
       finalidade: json['finalidade'] as String?,
       ocorrencias: json['ocorrencias'] as String?,
       status: json['status'] as String? ?? '',
-      veiculo: DiaryVehicle.fromJson(
-        json['veiculo'] as Map<String, dynamic>,
-      ),
+      veiculo: DiaryVehicle.fromJson(json['veiculo'] as Map<String, dynamic>),
       motorista: DiaryDriver.fromJson(
         json['motorista'] as Map<String, dynamic>,
       ),
@@ -128,6 +158,9 @@ class DiaryEntry {
           ? DiaryWorkSite.fromJson(obraJson)
           : null,
       houveAbastecimento: json['houve_abastecimento'] as bool? ?? false,
+      movimentacaoMaterial: movimentacaoJson is Map<String, dynamic>
+          ? DiaryMaterial.fromJson(movimentacaoJson)
+          : null,
     );
   }
 }
@@ -163,9 +196,7 @@ class DiaryState {
           ? DiaryVehicle.fromJson(veiculoJson)
           : null,
       obras: (json['obras'] as List<dynamic>? ?? const [])
-          .map(
-            (item) => DiaryWorkSite.fromJson(item as Map<String, dynamic>),
-          )
+          .map((item) => DiaryWorkSite.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
       diarioEmAndamento: diarioJson is Map<String, dynamic>
           ? DiaryEntry.fromJson(diarioJson)
@@ -173,9 +204,7 @@ class DiaryState {
       podeIniciar: json['pode_iniciar'] as bool? ?? false,
       bloqueio: json['bloqueio'] as String?,
       recentes: (json['recentes'] as List<dynamic>? ?? const [])
-          .map(
-            (item) => DiaryEntry.fromJson(item as Map<String, dynamic>),
-          )
+          .map((item) => DiaryEntry.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
     );
   }

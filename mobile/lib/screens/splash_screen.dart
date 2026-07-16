@@ -15,8 +15,18 @@ class SplashScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              BrandMark(size: 76),
-              SizedBox(height: 24),
+              BrandMark(size: 82),
+              SizedBox(height: 18),
+              Text(
+                'Motriva Fleet',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              SizedBox(height: 26),
               SizedBox(
                 width: 26,
                 height: 26,

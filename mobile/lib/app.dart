@@ -17,7 +17,7 @@ class DiarioDeBordoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Diário de Bordo',
+      title: 'Motriva Fleet',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       home: AnimatedBuilder(

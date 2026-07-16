@@ -134,8 +134,8 @@
                         </ul>
                     </li>
 
-                    <li class="nav-item {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') or request.path.startswith('/ponto-eletronico') %}menu-open{% endif %}">
-                        <a href="#" class="nav-link {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') or request.path.startswith('/ponto-eletronico') %}active{% endif %}">
+                    <li class="nav-item {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') or request.path.startswith('/movimentacoes-materiais') or request.path.startswith('/ponto-eletronico') %}menu-open{% endif %}">
+                        <a href="#" class="nav-link {% if request.path.startswith('/abastecimentos') or request.path.startswith('/manutencoes') or request.path.startswith('/diario') or request.path.startswith('/movimentacoes-materiais') or request.path.startswith('/ponto-eletronico') %}active{% endif %}">
                             <i class="nav-icon bi bi-gear-wide-connected"></i>
                             <p>Operações <i class="nav-arrow bi bi-chevron-right"></i></p>
                         </a>
@@ -143,6 +143,7 @@
                             <li class="nav-item"><a href="/abastecimentos" class="nav-link {% if request.path.startswith('/abastecimentos') %}active{% endif %}"><i class="nav-icon bi bi-fuel-pump"></i><p>Abastecimentos</p></a></li>
                             <li class="nav-item"><a href="/manutencoes" class="nav-link {% if request.path.startswith('/manutencoes') %}active{% endif %}"><i class="nav-icon bi bi-tools"></i><p>Manutenções</p></a></li>
                             <li class="nav-item"><a href="/diario" class="nav-link {% if request.path.startswith('/diario') %}active{% endif %}"><i class="nav-icon bi bi-journal-text"></i><p>Diário de Bordo</p></a></li>
+                            <li class="nav-item"><a href="{{ url_for('diario.listar_movimentacoes_materiais') }}" class="nav-link {% if request.path.startswith('/movimentacoes-materiais') %}active{% endif %}"><i class="nav-icon bi bi-box-seam"></i><p>Movimentações de Materiais</p></a></li>
                             <li class="nav-item"><a href="{{ url_for('ponto.coleta') }}" class="nav-link {% if request.path == '/ponto-eletronico' %}active{% endif %}"><i class="nav-icon bi bi-clock-history"></i><p>Ponto Eletrônico</p></a></li>
                             <li class="nav-item"><a href="{{ url_for('ponto.gestao') }}" class="nav-link {% if request.path.startswith('/ponto-eletronico/gestao') %}active{% endif %}"><i class="nav-icon bi bi-calendar-check"></i><p>Gestão do Ponto</p></a></li>
                         </ul>

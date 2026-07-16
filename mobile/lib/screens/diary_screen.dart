@@ -90,7 +90,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            dados.houveAbastecimento
+            dados.transportaMaterial
+                ? 'Diário iniciado e carga enviada aos apontadores.'
+                : dados.houveAbastecimento
                 ? 'Diário e abastecimento registrados.'
                 : 'Diário iniciado com sucesso.',
           ),
@@ -225,9 +227,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 Text(
                   'Suas viagens',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.ink,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -564,13 +566,60 @@ class _ActiveDiaryCard extends StatelessWidget {
             const SizedBox(height: 12),
             const Row(
               children: [
-                Icon(Icons.local_gas_station, size: 18, color: AppColors.lightBlue),
+                Icon(
+                  Icons.local_gas_station,
+                  size: 18,
+                  color: AppColors.lightBlue,
+                ),
                 SizedBox(width: 7),
                 Text(
                   'Abastecimento registrado nesta saída',
                   style: TextStyle(color: AppColors.sidebarText),
                 ),
               ],
+            ),
+          ],
+          if (diario.movimentacaoMaterial != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(color: const Color(0x335DB4FF)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.inventory_2_outlined,
+                    color: AppColors.lightBlue,
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          diario.movimentacaoMaterial!.material,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'Movimentação ${diario.movimentacaoMaterial!.numeroMovimentacao} '
+                          '· ${diario.movimentacaoMaterial!.status}',
+                          style: const TextStyle(
+                            color: AppColors.sidebarText,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
           const SizedBox(height: 20),
@@ -605,13 +654,19 @@ class _MiniInfo extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 11)),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.muted, fontSize: 11),
+          ),
           const SizedBox(height: 3),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              color: AppColors.ink,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -659,7 +714,10 @@ class _DarkInfo extends StatelessWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.sidebarText, fontSize: 11),
+                  style: const TextStyle(
+                    color: AppColors.sidebarText,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -710,6 +768,20 @@ class _DiaryHistoryTile extends StatelessWidget {
                   '${diario.horaChegada == null ? '' : '–${diario.horaChegada}'}',
                   style: const TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
+                if (diario.movimentacaoMaterial != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '${diario.movimentacaoMaterial!.material} · '
+                    '${diario.movimentacaoMaterial!.status}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -746,6 +818,10 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
   final _destinoController = TextEditingController();
   final _finalidadeController = TextEditingController();
   final _ocorrenciasController = TextEditingController();
+  final _materialController = TextEditingController();
+  final _numeroMovimentacaoController = TextEditingController();
+  final _quantidadeMaterialController = TextEditingController();
+  final _observacaoMaterialController = TextEditingController();
   final _postoController = TextEditingController();
   final _litrosController = TextEditingController();
   final _valorLitroController = TextEditingController();
@@ -755,7 +831,9 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
   late TimeOfDay _horaSaida;
   int? _obraId;
   bool _houveAbastecimento = false;
+  bool _transportaMaterial = false;
   bool _tanqueCheio = false;
+  String? _unidadeMaterial;
   XFile? _fotoOdometro;
   XFile? _cupomFiscal;
 
@@ -778,6 +856,10 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
     _destinoController.dispose();
     _finalidadeController.dispose();
     _ocorrenciasController.dispose();
+    _materialController.dispose();
+    _numeroMovimentacaoController.dispose();
+    _quantidadeMaterialController.dispose();
+    _observacaoMaterialController.dispose();
     _postoController.dispose();
     _litrosController.dispose();
     _valorLitroController.dispose();
@@ -786,7 +868,8 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
   }
 
   double get _valorTotal {
-    final litros = double.tryParse(_litrosController.text.replaceAll(',', '.')) ?? 0;
+    final litros =
+        double.tryParse(_litrosController.text.replaceAll(',', '.')) ?? 0;
     final valor =
         double.tryParse(_valorLitroController.text.replaceAll(',', '.')) ?? 0;
     return litros * valor;
@@ -805,7 +888,10 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
   }
 
   Future<void> _selecionarHora() async {
-    final hora = await showTimePicker(context: context, initialTime: _horaSaida);
+    final hora = await showTimePicker(
+      context: context,
+      initialTime: _horaSaida,
+    );
     if (!mounted) return;
     if (hora != null) setState(() => _horaSaida = hora);
   }
@@ -862,6 +948,14 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
         tanqueCheio: _tanqueCheio,
         fotoOdometroPath: _fotoOdometro?.path,
         cupomFiscalPath: _cupomFiscal?.path,
+        transportaMaterial: _transportaMaterial,
+        material: _materialController.text.trim(),
+        numeroMovimentacao: _numeroMovimentacaoController.text.trim(),
+        quantidadeMaterial: _quantidadeMaterialController.text
+            .trim()
+            .replaceAll(',', '.'),
+        unidadeMaterial: _unidadeMaterial ?? '',
+        observacaoMaterial: _observacaoMaterialController.text.trim(),
       ),
     );
   }
@@ -1021,6 +1115,163 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
                     const SizedBox(height: 22),
                     SwitchListTile.adaptive(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      value: _transportaMaterial,
+                      onChanged: (valor) {
+                        setState(() {
+                          _transportaMaterial = valor;
+                          if (!valor) {
+                            _materialController.clear();
+                            _numeroMovimentacaoController.clear();
+                            _quantidadeMaterialController.clear();
+                            _observacaoMaterialController.clear();
+                            _unidadeMaterial = null;
+                          }
+                        });
+                      },
+                      title: const Text(
+                        'Está transportando material?',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      subtitle: const Text(
+                        'A carga aparecerá para recebimento no app do apontador.',
+                      ),
+                    ),
+                    if (_transportaMaterial) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          border: Border.all(color: AppColors.border),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _materialController,
+                              textCapitalization: TextCapitalization.sentences,
+                              decoration: const InputDecoration(
+                                labelText: 'Material',
+                                prefixIcon: Icon(Icons.inventory_2_outlined),
+                                hintText:
+                                    'Ex.: Brita, areia ou massa asfáltica',
+                              ),
+                              validator: (valor) => _transportaMaterial
+                                  ? _validarObrigatorio(valor)
+                                  : null,
+                            ),
+                            const SizedBox(height: 14),
+                            TextFormField(
+                              controller: _numeroMovimentacaoController,
+                              decoration: const InputDecoration(
+                                labelText: 'Número da movimentação',
+                                prefixIcon: Icon(Icons.numbers_outlined),
+                              ),
+                              validator: (valor) => _transportaMaterial
+                                  ? _validarObrigatorio(valor)
+                                  : null,
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _quantidadeMaterialController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Quantidade (opcional)',
+                                    ),
+                                    onChanged: (_) => setState(() {}),
+                                    validator: (valor) {
+                                      if (!_transportaMaterial) return null;
+                                      if ((valor ?? '').trim().isEmpty) {
+                                        if (_unidadeMaterial != null) {
+                                          return 'Informe a quantidade';
+                                        }
+                                        return null;
+                                      }
+                                      final numero = double.tryParse(
+                                        valor!.replaceAll(',', '.'),
+                                      );
+                                      if (numero == null || numero <= 0) {
+                                        return 'Quantidade inválida';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: DropdownButtonFormField<String?>(
+                                    initialValue: _unidadeMaterial,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Unidade',
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem<String?>(
+                                        value: null,
+                                        child: Text('Não informar'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 't',
+                                        child: Text('t'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'kg',
+                                        child: Text('kg'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'm³',
+                                        child: Text('m³'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'un',
+                                        child: Text('un'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'carga',
+                                        child: Text('carga'),
+                                      ),
+                                    ],
+                                    onChanged: (valor) {
+                                      setState(() => _unidadeMaterial = valor);
+                                    },
+                                    validator: (valor) {
+                                      if (!_transportaMaterial) return null;
+                                      final possuiQuantidade =
+                                          _quantidadeMaterialController.text
+                                              .trim()
+                                              .isNotEmpty;
+                                      if (possuiQuantidade && valor == null) {
+                                        return 'Selecione';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 14),
+                            TextFormField(
+                              controller: _observacaoMaterialController,
+                              maxLines: 2,
+                              textCapitalization: TextCapitalization.sentences,
+                              decoration: const InputDecoration(
+                                labelText: 'Observação da carga (opcional)',
+                                alignLabelWithHint: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 22),
+                    SwitchListTile.adaptive(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                       value: _houveAbastecimento,
                       onChanged: (valor) {
                         setState(() => _houveAbastecimento = valor);
@@ -1049,7 +1300,9 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
                               readOnly: true,
                               decoration: const InputDecoration(
                                 labelText: 'Combustível do veículo',
-                                prefixIcon: Icon(Icons.local_gas_station_outlined),
+                                prefixIcon: Icon(
+                                  Icons.local_gas_station_outlined,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 14),
@@ -1069,36 +1322,40 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
                                 Expanded(
                                   child: TextFormField(
                                     controller: _litrosController,
-                                    keyboardType: const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
                                     decoration: const InputDecoration(
                                       labelText: 'Litros',
                                       suffixText: 'L',
                                     ),
                                     onChanged: (_) => setState(() {}),
-                                    validator: (valor) => _validarDecimalPositivo(
-                                      valor,
-                                      'Informe os litros',
-                                    ),
+                                    validator: (valor) =>
+                                        _validarDecimalPositivo(
+                                          valor,
+                                          'Informe os litros',
+                                        ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: TextFormField(
                                     controller: _valorLitroController,
-                                    keyboardType: const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
                                     decoration: const InputDecoration(
                                       labelText: 'Valor por litro',
                                       prefixText: 'R\$ ',
                                     ),
                                     onChanged: (_) => setState(() {}),
-                                    validator: (valor) => _validarDecimalPositivo(
-                                      valor,
-                                      'Informe o valor',
-                                    ),
+                                    validator: (valor) =>
+                                        _validarDecimalPositivo(
+                                          valor,
+                                          'Informe o valor',
+                                        ),
                                   ),
                                 ),
                               ],
@@ -1273,7 +1530,10 @@ class _FinishDiarySheetState extends State<_FinishDiarySheet> {
                     Text(
                       '${diario.veiculo.placa} · saída ${diario.horaSaida} · '
                       'KM inicial ${_formatarInteiro(diario.kmInicial)}',
-                      style: const TextStyle(color: AppColors.inkSoft, fontSize: 12),
+                      style: const TextStyle(
+                        color: AppColors.inkSoft,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -1332,10 +1592,7 @@ class _FinishDiarySheetState extends State<_FinishDiarySheet> {
 }
 
 class _LinkedVehicleBanner extends StatelessWidget {
-  const _LinkedVehicleBanner({
-    required this.motorista,
-    required this.veiculo,
-  });
+  const _LinkedVehicleBanner({required this.motorista, required this.veiculo});
 
   final String motorista;
   final DiaryVehicle veiculo;
@@ -1365,7 +1622,10 @@ class _LinkedVehicleBanner extends StatelessWidget {
                 ),
                 Text(
                   '${veiculo.modelo} · ${veiculo.combustivel.isEmpty ? 'combustível não cadastrado' : veiculo.combustivel}',
-                  style: const TextStyle(color: AppColors.inkSoft, fontSize: 12),
+                  style: const TextStyle(
+                    color: AppColors.inkSoft,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -1436,7 +1696,10 @@ class _PhotoField extends StatelessWidget {
                 color: AppColors.primarySoft,
                 borderRadius: BorderRadius.circular(7),
               ),
-              child: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              child: const Icon(
+                Icons.camera_alt_outlined,
+                color: AppColors.primary,
+              ),
             )
           else
             ClipRRect(
@@ -1453,16 +1716,24 @@ class _PhotoField extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: AppColors.muted, fontSize: 11)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: AppColors.muted, fontSize: 11),
+                ),
               ],
             ),
           ),
           IconButton.filledTonal(
             tooltip: foto == null ? 'Abrir câmera' : 'Tirar novamente',
             onPressed: onCamera,
-            icon: Icon(foto == null ? Icons.camera_alt_outlined : Icons.refresh),
+            icon: Icon(
+              foto == null ? Icons.camera_alt_outlined : Icons.refresh,
+            ),
           ),
         ],
       ),
