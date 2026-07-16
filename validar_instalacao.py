@@ -15,6 +15,7 @@ def main() -> None:
 
     from app import app
     from controllers.usuarios import PERFIS_PERMITIDOS
+    from database.models import DiarioBordo, MovimentacaoMaterial
     from extensions import db
     from sqlalchemy import inspect
 
@@ -63,6 +64,23 @@ def main() -> None:
         if ausentes:
             raise RuntimeError(
                 f"Colunas ausentes na movimentação: {sorted(ausentes)}"
+            )
+
+        recebidos_em_aberto = (
+            DiarioBordo.query
+            .join(DiarioBordo.movimentacao_material)
+            .filter(
+                DiarioBordo.status == "Em andamento",
+                MovimentacaoMaterial.status.in_([
+                    "Recebido",
+                    "Recebido com ressalva",
+                ]),
+            )
+            .count()
+        )
+        if recebidos_em_aberto:
+            raise RuntimeError(
+                "Ainda existem viagens recebidas marcadas como em andamento."
             )
 
     arquivos_mobile = (

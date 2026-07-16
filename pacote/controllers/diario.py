@@ -40,7 +40,6 @@ diario_bp = Blueprint("diario", __name__)
 
 
 EXTENSOES_IMAGEM = {"jpg", "jpeg", "png", "webp"}
-EXTENSOES_COMPROVANTE = EXTENSOES_IMAGEM | {"pdf"}
 STATUS_MOVIMENTACAO = {
     "Em trânsito",
     "Recebido",
@@ -377,10 +376,10 @@ def validar_abastecimento(dados):
         return "A foto do odômetro deve ser JPG, PNG ou WEBP."
 
     if not dados["cupom_fiscal"] or not dados["cupom_fiscal"].filename:
-        return "Inclua a foto do cupom fiscal."
+        return "Inclua a foto da placa do veículo."
 
-    if extensao_arquivo(dados["cupom_fiscal"]) not in EXTENSOES_COMPROVANTE:
-        return "O cupom fiscal deve ser JPG, PNG, WEBP ou PDF."
+    if extensao_arquivo(dados["cupom_fiscal"]) not in EXTENSOES_IMAGEM:
+        return "A foto da placa deve ser JPG, PNG ou WEBP."
 
     return None
 
@@ -1253,8 +1252,8 @@ def novo_diario():
             cupom_fiscal = salvar_arquivo_abastecimento(
                 dados_abastecimento["cupom_fiscal"],
                 empresa.id,
-                "cupom",
-                EXTENSOES_COMPROVANTE,
+                "placa",
+                EXTENSOES_IMAGEM,
             )
             arquivos_salvos.append(cupom_fiscal)
 
@@ -1337,6 +1336,30 @@ def finalizar_diario(diario_id):
 
     if diario.status != "Em andamento":
         flash("Esse diário já foi finalizado.", "warning")
+        return redirect(url_for("diario.listar_diarios"))
+
+    movimentacao = diario.movimentacao_material
+
+    if movimentacao and movimentacao.status == "Em trânsito":
+        flash(
+            "Esta viagem será concluída automaticamente quando o apontador "
+            "confirmar o recebimento do material.",
+            "warning",
+        )
+        return redirect(url_for("diario.listar_diarios"))
+
+    if movimentacao and movimentacao.recebida:
+        diario.hora_retorno = (
+            movimentacao.recebido_em.time().replace(microsecond=0)
+            if movimentacao.recebido_em
+            else agora_local().time().replace(microsecond=0)
+        )
+        diario.status = "Concluído"
+        db.session.commit()
+        flash(
+            "Viagem concluída pelo recebimento confirmado pelo apontador.",
+            "success",
+        )
         return redirect(url_for("diario.listar_diarios"))
 
     hora_chegada = converter_hora(request.form.get("hora_chegada"))

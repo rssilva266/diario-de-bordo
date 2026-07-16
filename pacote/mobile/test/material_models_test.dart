@@ -81,11 +81,14 @@ void main() {
         'numero_movimentacao': 'MOV-2026-001',
         'quantidade': 12.5,
         'unidade': 'un',
-        'status': 'Em trânsito',
+        'status': 'Recebido',
+        'recebido_em': '2026-07-16T09:45:00',
       },
     });
 
     expect(diario.movimentacaoMaterial?.material, 'Tubos PEAD');
-    expect(diario.movimentacaoMaterial?.status, 'Em trânsito');
+    expect(diario.movimentacaoMaterial?.status, 'Recebido');
+    expect(diario.movimentacaoMaterial?.recebida, true);
+    expect(diario.movimentacaoMaterial?.recebidoEm?.hour, 9);
   });
 }

@@ -38,7 +38,6 @@ mobile_api_bp = Blueprint(
 
 FUSO_LOCAL = ZoneInfo("America/Rio_Branco")
 EXTENSOES_IMAGEM = {"jpg", "jpeg", "png", "webp"}
-EXTENSOES_COMPROVANTE = EXTENSOES_IMAGEM | {"pdf"}
 PERFIS_RECEBIMENTO_MATERIAL = {"apontador"}
 
 
@@ -1159,12 +1158,13 @@ def receber_material(movimentacao_id):
             foto,
             usuario.empresa_id,
         )
+        momento_recebimento = agora_local()
         movimentacao.status = (
             "Recebido com ressalva"
             if com_ressalva
             else "Recebido"
         )
-        movimentacao.recebido_em = agora_local()
+        movimentacao.recebido_em = momento_recebimento
         movimentacao.recebido_por_id = usuario.id
         movimentacao.foto_recebimento = foto_path
         movimentacao.latitude_recebimento = latitude
@@ -1172,6 +1172,14 @@ def receber_material(movimentacao_id):
         movimentacao.precisao_metros = precisao
         movimentacao.observacao_recebimento = observacao or None
         movimentacao.client_uuid_recebimento = client_uuid
+
+        diario = movimentacao.diario_bordo
+        if diario.status == "Em andamento":
+            diario.hora_retorno = momento_recebimento.time().replace(
+                microsecond=0,
+            )
+            diario.status = "Concluído"
+
         db.session.commit()
     except ValueError as erro_arquivo:
         db.session.rollback()
@@ -1188,7 +1196,9 @@ def receber_material(movimentacao_id):
 
     return jsonify({
         "ok": True,
-        "mensagem": "Material recebido e comprovante registrado.",
+        "mensagem": (
+            "Material recebido e viagem concluída automaticamente."
+        ),
         "movimentacao": serializar_movimentacao_material(movimentacao),
     })
 
@@ -1346,10 +1356,10 @@ def iniciar_diario():
                 "erro": "Inclua uma foto válida do odômetro.",
             }), 400
 
-        if extensao_arquivo(cupom_fiscal_arquivo) not in EXTENSOES_COMPROVANTE:
+        if extensao_arquivo(cupom_fiscal_arquivo) not in EXTENSOES_IMAGEM:
             return jsonify({
                 "ok": False,
-                "erro": "Inclua uma foto válida do cupom fiscal.",
+                "erro": "Inclua uma foto válida da placa do veículo.",
             }), 400
 
     if transporta_material:
@@ -1431,8 +1441,8 @@ def iniciar_diario():
             cupom_fiscal = salvar_arquivo_abastecimento_mobile(
                 cupom_fiscal_arquivo,
                 usuario.empresa_id,
-                "cupom",
-                EXTENSOES_COMPROVANTE,
+                "placa",
+                EXTENSOES_IMAGEM,
             )
             arquivos_salvos.append(cupom_fiscal)
 
@@ -1524,6 +1534,42 @@ def finalizar_diario_mobile(diario_id):
         return jsonify({
             "ok": True,
             "mensagem": "Esse diário já estava finalizado.",
+            "estado": serializar_estado_diario(usuario, motorista),
+        })
+
+    movimentacao = diario.movimentacao_material
+
+    if movimentacao and movimentacao.status == "Em trânsito":
+        return jsonify({
+            "ok": False,
+            "erro": (
+                "Esta viagem transporta material e será finalizada "
+                "automaticamente quando o apontador confirmar o recebimento."
+            ),
+        }), 409
+
+    if movimentacao and movimentacao.recebida:
+        try:
+            diario.hora_retorno = (
+                movimentacao.recebido_em.time().replace(microsecond=0)
+                if movimentacao.recebido_em
+                else agora_local().time().replace(microsecond=0)
+            )
+            diario.status = "Concluído"
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception(
+                "Falha ao reconciliar diário recebido pelo apontador"
+            )
+            return jsonify({
+                "ok": False,
+                "erro": "Não foi possível atualizar a viagem recebida.",
+            }), 500
+
+        return jsonify({
+            "ok": True,
+            "mensagem": "Viagem concluída pelo recebimento do apontador.",
             "estado": serializar_estado_diario(usuario, motorista),
         })
 

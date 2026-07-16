@@ -71,6 +71,7 @@ class DiaryMaterial {
     required this.status,
     this.quantidade,
     this.unidade,
+    this.recebidoEm,
   });
 
   final int id;
@@ -79,6 +80,11 @@ class DiaryMaterial {
   final String status;
   final double? quantidade;
   final String? unidade;
+  final DateTime? recebidoEm;
+
+  bool get emTransito => status == 'Em trânsito';
+  bool get recebida =>
+      status == 'Recebido' || status == 'Recebido com ressalva';
 
   factory DiaryMaterial.fromJson(Map<String, dynamic> json) {
     return DiaryMaterial(
@@ -88,6 +94,9 @@ class DiaryMaterial {
       status: json['status'] as String? ?? '',
       quantidade: (json['quantidade'] as num?)?.toDouble(),
       unidade: json['unidade'] as String?,
+      recebidoEm: json['recebido_em'] == null
+          ? null
+          : DateTime.parse(json['recebido_em'] as String),
     );
   }
 }

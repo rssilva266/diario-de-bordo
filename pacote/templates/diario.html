@@ -432,6 +432,13 @@
                                     {% else %}
                                         <span class="badge text-bg-secondary mt-1">Cancelado</span>
                                     {% endif %}
+
+                                    {% if diario.movimentacao_material.recebido_em %}
+                                        <div class="small text-success mt-1">
+                                            Entregue em
+                                            {{ diario.movimentacao_material.recebido_em.strftime("%d/%m/%Y %H:%M") }}
+                                        </div>
+                                    {% endif %}
                                 {% else %}
                                     <span class="text-muted">Sem material</span>
                                 {% endif %}
@@ -456,15 +463,22 @@
                             <td class="text-end">
 
                                 {% if diario.status == "Em andamento" %}
-                                    <button
-                                        type="button"
-                                        class="btn btn-sm btn-success me-1"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalFinalizarDiario{{ diario.id }}"
-                                    >
-                                        <i class="bi bi-check-circle"></i>
-                                        Finalizar
-                                    </button>
+                                    {% if diario.movimentacao_material and diario.movimentacao_material.status != "Cancelado" %}
+                                        <span class="small text-warning me-2">
+                                            <i class="bi bi-hourglass-split"></i>
+                                            Aguardando apontador
+                                        </span>
+                                    {% else %}
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-success me-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalFinalizarDiario{{ diario.id }}"
+                                        >
+                                            <i class="bi bi-check-circle"></i>
+                                            Finalizar
+                                        </button>
+                                    {% endif %}
                                 {% endif %}
 
                                 <button
@@ -1066,14 +1080,14 @@
 
                                 <div class="col-md-6">
                                     <label for="cupomFiscal" class="form-label">
-                                        Foto do cupom fiscal
+                                        Foto da placa do veículo
                                     </label>
                                     <input
                                         type="file"
                                         id="cupomFiscal"
                                         name="cupom_fiscal"
                                         class="form-control obrigatorio-abastecimento"
-                                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                                        accept="image/jpeg,image/png,image/webp"
                                         capture="environment"
                                     >
                                     <div class="form-text">JPG, PNG, WEBP ou PDF.</div>
@@ -1421,7 +1435,7 @@
 
 <!-- MODAIS DE FINALIZAÇÃO -->
 {% for diario in diarios %}
-    {% if diario.status == "Em andamento" %}
+    {% if diario.status == "Em andamento" and (not diario.movimentacao_material or diario.movimentacao_material.status == "Cancelado") %}
         <div
             class="modal fade"
             id="modalFinalizarDiario{{ diario.id }}"

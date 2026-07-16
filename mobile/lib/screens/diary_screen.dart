@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -22,10 +23,12 @@ class DiaryScreen extends StatefulWidget {
 
 class _DiaryScreenState extends State<DiaryScreen> {
   late final DiaryService _diaryService;
+  Timer? _atualizacaoAutomatica;
 
   DiaryState? _estado;
   bool _carregando = true;
   bool _enviando = false;
+  bool _consultando = false;
   String? _erro;
 
   @override
@@ -33,15 +36,31 @@ class _DiaryScreenState extends State<DiaryScreen> {
     super.initState();
     _diaryService = DiaryService(widget.sessionController.apiClient);
     _carregarEstado();
+    _atualizacaoAutomatica = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _carregarEstado(silencioso: true),
+    );
   }
 
-  Future<void> _carregarEstado() async {
-    if (!mounted || widget.sessionController.usuario == null) return;
+  @override
+  void dispose() {
+    _atualizacaoAutomatica?.cancel();
+    super.dispose();
+  }
 
-    setState(() {
-      _carregando = true;
-      _erro = null;
-    });
+  Future<void> _carregarEstado({bool silencioso = false}) async {
+    if (!mounted || widget.sessionController.usuario == null || _consultando) {
+      return;
+    }
+
+    _consultando = true;
+
+    if (!silencioso) {
+      setState(() {
+        _carregando = true;
+        _erro = null;
+      });
+    }
 
     try {
       final estado = await _diaryService.obterEstado();
@@ -51,13 +70,14 @@ class _DiaryScreenState extends State<DiaryScreen> {
         await widget.sessionController.sessaoExpirada();
         return;
       }
-      if (mounted) setState(() => _erro = erro.message);
+      if (mounted && !silencioso) setState(() => _erro = erro.message);
     } catch (_) {
-      if (mounted) {
+      if (mounted && !silencioso) {
         setState(() => _erro = 'Não foi possível carregar seus diários.');
       }
     } finally {
-      if (mounted) setState(() => _carregando = false);
+      _consultando = false;
+      if (mounted && !silencioso) setState(() => _carregando = false);
     }
   }
 
@@ -219,7 +239,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
       body: Stack(
         children: [
           RefreshIndicator(
-            onRefresh: _carregarEstado,
+            onRefresh: () => _carregarEstado(),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 36),
@@ -243,7 +263,10 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     child: Center(child: CircularProgressIndicator()),
                   )
                 else if (_erro != null)
-                  _DiaryErrorCard(message: _erro!, onRetry: _carregarEstado)
+                  _DiaryErrorCard(
+                    message: _erro!,
+                    onRetry: () => _carregarEstado(),
+                  )
                 else if (_estado != null)
                   _DiaryContent(
                     estado: _estado!,
@@ -475,6 +498,11 @@ class _ActiveDiaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final movimentacao = diario.movimentacaoMaterial;
+    final finalizacaoPeloApontador =
+        movimentacao != null && movimentacao.status != 'Cancelado';
+    final materialRecebido = movimentacao?.recebida ?? false;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -499,10 +527,12 @@ class _ActiveDiaryCard extends StatelessWidget {
             children: [
               const Icon(Icons.route, color: AppColors.lightBlue),
               const SizedBox(width: 9),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Viagem em andamento',
-                  style: TextStyle(
+                  finalizacaoPeloApontador
+                      ? 'Transporte de material'
+                      : 'Viagem em andamento',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
@@ -515,10 +545,12 @@ class _ActiveDiaryCard extends StatelessWidget {
                   color: const Color(0x33F59E0B),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'EM ANDAMENTO',
+                child: Text(
+                  materialRecebido ? 'RECEBIDO' : 'EM ANDAMENTO',
                   style: TextStyle(
-                    color: Color(0xFFFCD34D),
+                    color: materialRecebido
+                        ? const Color(0xFF86EFAC)
+                        : const Color(0xFFFCD34D),
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                   ),
@@ -579,7 +611,7 @@ class _ActiveDiaryCard extends StatelessWidget {
               ],
             ),
           ],
-          if (diario.movimentacaoMaterial != null) ...[
+          if (movimentacao != null) ...[
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
@@ -601,15 +633,19 @@ class _ActiveDiaryCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          diario.movimentacaoMaterial!.material,
+                          movimentacao.material,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         Text(
-                          'Movimentação ${diario.movimentacaoMaterial!.numeroMovimentacao} '
-                          '· ${diario.movimentacaoMaterial!.status}',
+                          materialRecebido && movimentacao.recebidoEm != null
+                              ? 'Recebido em '
+                                    '${_formatarDataHora(movimentacao.recebidoEm!)}'
+                              : 'Movimentação '
+                                    '${movimentacao.numeroMovimentacao} · '
+                                    '${movimentacao.status}',
                           style: const TextStyle(
                             color: AppColors.sidebarText,
                             fontSize: 12,
@@ -623,14 +659,52 @@ class _ActiveDiaryCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onFinish,
-              icon: const Icon(Icons.flag_outlined),
-              label: const Text('Finalizar viagem'),
+          if (finalizacaoPeloApontador)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: materialRecebido
+                    ? const Color(0x3322C55E)
+                    : const Color(0x33F59E0B),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    materialRecebido
+                        ? Icons.check_circle_outline
+                        : Icons.hourglass_top_rounded,
+                    color: materialRecebido
+                        ? const Color(0xFF86EFAC)
+                        : const Color(0xFFFCD34D),
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      materialRecebido
+                          ? 'Material recebido. Atualizando a viagem...'
+                          : 'Aguardando o apontador confirmar o recebimento. '
+                                'A viagem será concluída automaticamente.',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onFinish,
+                icon: const Icon(Icons.flag_outlined),
+                label: const Text('Finalizar viagem'),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -735,6 +809,8 @@ class _DiaryHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final movimentacao = diario.movimentacaoMaterial;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
@@ -768,11 +844,13 @@ class _DiaryHistoryTile extends StatelessWidget {
                   '${diario.horaChegada == null ? '' : '–${diario.horaChegada}'}',
                   style: const TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
-                if (diario.movimentacaoMaterial != null) ...[
+                if (movimentacao != null) ...[
                   const SizedBox(height: 3),
                   Text(
-                    '${diario.movimentacaoMaterial!.material} · '
-                    '${diario.movimentacaoMaterial!.status}',
+                    movimentacao.recebida && movimentacao.recebidoEm != null
+                        ? '${movimentacao.material} · recebido em '
+                              '${_formatarDataHora(movimentacao.recebidoEm!)}'
+                        : '${movimentacao.material} · ${movimentacao.status}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -922,7 +1000,7 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
         (_fotoOdometro == null || _cupomFiscal == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Tire a foto do odômetro e do cupom fiscal.'),
+          content: Text('Tire a foto do odômetro e da placa do veículo.'),
           backgroundColor: AppColors.danger,
         ),
       );
@@ -1391,8 +1469,8 @@ class _NewDiarySheetState extends State<_NewDiarySheet> {
                             ),
                             const SizedBox(height: 12),
                             _PhotoField(
-                              title: 'Foto do cupom fiscal',
-                              subtitle: 'Enquadre valores, litros e data.',
+                              title: 'Foto da placa do veículo',
+                              subtitle: 'Mostre a placa completa com nitidez.',
                               foto: _cupomFiscal,
                               onCamera: () => _tirarFoto(odometro: false),
                             ),
@@ -1809,6 +1887,12 @@ String _formatarDataApi(DateTime data) {
 String _formatarData(DateTime data) {
   return '${data.day.toString().padLeft(2, '0')}/'
       '${data.month.toString().padLeft(2, '0')}/${data.year}';
+}
+
+String _formatarDataHora(DateTime data) {
+  return '${_formatarData(data)} às '
+      '${data.hour.toString().padLeft(2, '0')}:'
+      '${data.minute.toString().padLeft(2, '0')}';
 }
 
 String _formatarTimeOfDay(TimeOfDay hora) {

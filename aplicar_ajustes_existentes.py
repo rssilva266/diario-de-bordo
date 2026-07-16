@@ -112,12 +112,22 @@ def ajustar_versao_mobile(raiz: Path) -> None:
     encontrou = False
     for indice, linha in enumerate(linhas):
         if linha.startswith("version:"):
-            linhas[indice] = "version: 1.1.0+3"
+            linhas[indice] = "version: 1.1.1+4"
             encontrou = True
             break
 
     if not encontrou:
         raise RuntimeError("A versão não foi encontrada no pubspec.yaml.")
+
+    if not any(linha.strip().startswith("uuid:") for linha in linhas):
+        try:
+            indice_dev = linhas.index("dev_dependencies:")
+        except ValueError as erro:
+            raise RuntimeError(
+                "A seção dev_dependencies não foi encontrada no pubspec.yaml."
+            ) from erro
+
+        linhas.insert(indice_dev, "  uuid: ^4.5.3")
 
     caminho.write_text("\n".join(linhas) + "\n", encoding="utf-8")
 
@@ -130,7 +140,7 @@ def main() -> None:
     ajustar_menu(raiz)
     ajustar_perfis(raiz)
     ajustar_versao_mobile(raiz)
-    print("Menu, perfil Apontador e versão mobile ajustados.")
+    print("Menu, perfil Apontador, dependências e versão mobile ajustados.")
 
 
 if __name__ == "__main__":
